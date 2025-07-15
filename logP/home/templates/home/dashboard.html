@@ -1,9 +1,307 @@
 <!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - BookLoop</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+
+    <style>
+        :root {
+            --primary-color: #7B68EE;
+            --primary-hover: #6A5ACD;
+            --text-dark: #2c3e50;
+            --text-light: #888;
+            --bg-light: #f4f7fc;
+            --bg-white: #ffffff;
+            --border-color: #e0e0e0;
+        }
+        * {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-white);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .logo span {
+            display: block;
+            font-size: 0.8rem;
+            letter-spacing: 4px;
+            font-weight: 500;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+        .main-nav ul {
+            list-style-type: none;
+        }
+        .main-nav a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            color: #555;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .main-nav a i {
+            width: 20px;
+            margin-right: 1rem;
+            font-size: 1.1rem;
+        }
+        .main-nav a:hover,
+        .main-nav a.active {
+            background-color: var(--primary-color);
+            color: var(--bg-white);
+        }
+        .nav-section-title {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding: 0 1rem;
+        }
+        .sidebar .settings {
+            margin-top: auto;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow: auto;
+        }
+        .main-content h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+        }
+        .profile-card {
+            background-color: var(--bg-white);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .profile-form {
+            display: flex;
+            gap: 2rem;
+        }
+        .form-fields {
+            flex: 2;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+        .form-group input, .form-group select {
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .form-group input[type="email"] {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        .genre-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            min-height: 48px;
+        }
+        .genre-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        .profile-picture-area {
+            flex: 1;
+            max-width: 250px;
+        }
+        .profile-picture-area label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #444;
+            display: block;
+        }
+        .profile-picture-area img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            object-fit: cover;
+            aspect-ratio: 1/1;
+        }
+        .update-button {
+            grid-column: 1 / -1;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .update-button:hover {
+            background-color: var(--primary-hover);
+        }
+    </style>
+</head>
 <body>
-    <h2>Welcome to your dashboard!</h2>
-    <p>You are logged in.</p>
-    <a href="/logout/">Logout</a>
+
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                bOOk lOOp
+                <span>book loop</span>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                <li><a href="#"><i class="fas fa-plus-square"></i><span>List books</span></a></li>
+                <li><a href="#"><i class="fas fa-list-ul"></i><span>My listed books</span></a></li>
+                <li><a href="#"><i class="fas fa-heart"></i><span>Favourite books</span></a></li>
+                <li><a href="#"><i class="fas fa-exchange-alt"></i><span>Exchanged books</span></a></li>
+                <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i><span>Edit Profile</span></a></li>
+                <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+            </ul>
+            <div class="nav-section-title">Social</div>
+            <ul>
+                <li><a href="#"><i class="fas fa-envelope"></i><span>Messages</span></a></li>
+            </ul>
+        </nav>
+        <div class="settings">
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#"><i class="fas fa-book-open"></i><span>User Guide</span></a></li>
+                    <li><a href="#"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <h1>My profile</h1>
+        <div class="profile-card">
+            <form class="profile-form">
+                <div class="form-fields">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="first-name">First Name</label>
+                            <input type="text" id="first-name" value="{{ profile.first_name }}" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last name</label>
+                            <input type="text" id="last-name" value="{{ profile.last_name }}" disabled>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" value="{{ request.user.username }}" disabled>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" value="{{ request.user.email }}" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <input type="text" id="gender" value="{{ profile.gender }}" disabled>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>I am interested in these genres of books:</label>
+                            <div class="genre-box">
+                                {% for genre in profile.interested_genres.all %}
+                                    <span class="genre-tag">{{ genre.name }}</span>
+                                {% empty %}
+                                    <span class="genre-tag">None</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>I am looking for these genres of books:</label>
+                            <div class="genre-box">
+                                {% for genre in profile.looking_genres.all %}
+                                    <span class="genre-tag">{{ genre.name }}</span>
+                                {% empty %}
+                                    <span class="genre-tag">None</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="submit" class="update-button">Update profile</button>
+                    </div>
+                </div>
+                <div class="profile-picture-area">
+    <label>Profile Picture</label>
+
+    {% if profile.profile_pic %}
+        <img src="{{ profile.profile_pic.url }}" alt="Profile Picture" class="rounded w-32 h-32">
+    {% else %}
+        <p>No image uploaded</p>
+    {% endif %}
+</div>
+
+            </form>
+        </div>
+    </main>
+</div>
+
 </body>
 </html>

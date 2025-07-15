@@ -7,9 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    
+
     <style>
-        /* Global Styles */
         * {
             margin: 0;
             padding: 0;
@@ -18,16 +17,15 @@
 
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #F8F5F2; /* Consistent background */
+            background-color: #F8F5F2;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 2rem 0; /* Add padding for smaller viewports */
+            padding: 2rem 0;
             color: #333;
         }
 
-        /* Signup Container */
         .signup-container {
             background-color: #fff;
             padding: 3rem;
@@ -54,7 +52,6 @@
             color: #333;
         }
 
-        /* Form Styling */
         .form-group {
             margin-bottom: 1.5rem;
             text-align: left;
@@ -82,7 +79,6 @@
             box-shadow: 0 0 0 3px rgba(192, 108, 78, 0.2);
         }
 
-        /* Submit Button */
         input[type="submit"] {
             width: 100%;
             padding: 1rem;
@@ -101,7 +97,6 @@
             transform: translateY(-2px);
         }
 
-        /* Link to Login Page */
         .login-link {
             margin-top: 2rem;
         }
@@ -117,6 +112,28 @@
             text-decoration: underline;
         }
 
+        .messages {
+            margin-bottom: 1rem;
+            padding: 0;
+            list-style: none;
+        }
+
+        .messages li {
+            padding: 0.75rem;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .messages li.error {
+            background-color: #ffe0e0;
+            color: #b00020;
+        }
+
+        .messages li.success {
+            background-color: #e0ffe0;
+            color: #006600;
+        }
     </style>
 </head>
 <body>
@@ -124,8 +141,17 @@
     <div class="signup-container">
         <a href="/" class="logo">BookLoop</a>
         <h2>Create Your Account</h2>
-        
-        <form method="POST">
+
+        <!-- ✅ Django backend messages -->
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form id="signupForm" method="POST">
             {% csrf_token %}
             <div class="form-group">
                 <label for="username">Username</label>
@@ -136,24 +162,70 @@
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="confirm_password">Confirm Password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
-            
+
             <input type="submit" value="Create Account">
         </form>
-        
+
         <p class="login-link">
             Already have an account? <a href="/login/">Login</a>
         </p>
     </div>
+
+    <!-- ✅ JavaScript validation -->
+    <script>
+        const form = document.getElementById('signupForm');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const username = document.getElementById('username');
+
+        form.addEventListener('submit', function (event) {
+            const emailValue = email.value.trim();
+            const pwd = password.value;
+            const confirmPwd = confirmPassword.value;
+            const usernameValue = username.value.trim();
+
+            // Prevent empty username
+            if (usernameValue === "") {
+                alert("❌ Username cannot be empty.");
+                event.preventDefault();
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailValue)) {
+                alert("❌ Please enter a valid email address.");
+                event.preventDefault();
+                return;
+            }
+
+            // Password match check
+            if (pwd !== confirmPwd) {
+                alert("❌ Passwords do not match!");
+                event.preventDefault();
+                return;
+            }
+
+            // Password strength check
+            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#~])[A-Za-z\d@$!%*?&^#~]{8,}$/;
+            if (!strongRegex.test(pwd)) {
+                alert("❌ Password must be at least 8 characters, including uppercase, lowercase, number, and special character.");
+                event.preventDefault();
+                return;
+            }
+        });
+    </script>
 
 </body>
 </html>
