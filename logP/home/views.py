@@ -5,12 +5,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 from .models import UserProfile
-from .forms import UserProfileForm
-
+from .forms import UserProfileForm, BookForm  # ✅ Include BookForm
 
 def index(request):
     return render(request, 'home/index.html')
-
 
 def signup_view(request):
     if request.method == 'POST':
@@ -39,7 +37,6 @@ def signup_view(request):
 
     return render(request, 'home/signup.html')
 
-
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -55,11 +52,9 @@ def login_view(request):
 
     return render(request, 'home/login.html')
 
-
 def logout_view(request):
     logout(request)
     return redirect('login')
-
 
 @login_required
 def dashboard(request):
@@ -69,7 +64,6 @@ def dashboard(request):
         profile = None
 
     return render(request, 'home/dashboard.html', {'profile': profile})
-
 
 @login_required
 def profile_view(request):
@@ -86,3 +80,18 @@ def profile_view(request):
         form = UserProfileForm(instance=profile)
 
     return render(request, 'home/profile.html', {'form': form})
+
+# ✅ New: Book listing view
+@login_required
+def list_book(request):
+    if request.method == 'POST':
+        form = BookForm(request.POST, request.FILES)
+        if form.is_valid():
+            book = form.save(commit=False)
+            book.user = request.user
+            book.save()
+            messages.success(request, "✅ Book listed successfully!")
+            return redirect('dashboard')  # or a 'my_books' page
+    else:
+        form = BookForm()
+    return render(request, 'home/list_book.html', {'form': form})

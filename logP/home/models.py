@@ -42,3 +42,24 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+# ✅ Book model for listing books
+class Book(models.Model):
+    CONDITION_CHOICES = [
+        ('new', 'New'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='books')
+    title = models.CharField(max_length=255)
+    author = models.CharField(max_length=255)
+    genre = models.ForeignKey(Genre, on_delete=models.SET_NULL, null=True)
+    condition = models.CharField(max_length=10, choices=CONDITION_CHOICES)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to='book_images/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

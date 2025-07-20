@@ -1,5 +1,5 @@
 from django import forms
-from .models import UserProfile
+from .models import UserProfile, Book
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
@@ -15,4 +15,12 @@ class UserProfileForm(forms.ModelForm):
         widgets = {
             'interested_genres': forms.CheckboxSelectMultiple(),
             'looking_genres': forms.CheckboxSelectMultiple(),
+        }
+
+class BookForm(forms.ModelForm):
+    class Meta:
+        model = Book
+        fields = ['title', 'author', 'genre', 'condition', 'description', 'image']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
