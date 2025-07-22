@@ -1,11 +1,12 @@
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from .models import UserProfile
-from .forms import UserProfileForm, BookForm  # ✅ Include BookForm
+from .models import UserProfile, Book
+from .forms import UserProfileForm, BookForm
 
 def index(request):
     return render(request, 'home/index.html')
@@ -58,12 +59,27 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
+    user = request.user
     try:
-        profile = UserProfile.objects.get(user=request.user)
+        profile = UserProfile.objects.get(user=user)
     except UserProfile.DoesNotExist:
         profile = None
 
-    return render(request, 'home/dashboard.html', {'profile': profile})
+    # ✅ Real count from DB
+    listed_books_count = Book.objects.filter(user=user).count()
+
+    # ❌ Dummy values (you can replace later)
+    favourite_books_count = 0
+    exchanged_books_count = 0
+
+    context = {
+        'profile': profile,
+        'listed_books_count': listed_books_count,
+        'favourite_books_count': favourite_books_count,
+        'exchanged_books_count': exchanged_books_count,
+        'user': user,
+    }
+    return render(request, 'home/dashboard.html', context)
 
 @login_required
 def profile_view(request):
@@ -81,7 +97,6 @@ def profile_view(request):
 
     return render(request, 'home/profile.html', {'form': form})
 
-# ✅ New: Book listing view
 @login_required
 def list_book(request):
     if request.method == 'POST':
@@ -91,7 +106,7 @@ def list_book(request):
             book.user = request.user
             book.save()
             messages.success(request, "✅ Book listed successfully!")
-            return redirect('dashboard')  # or a 'my_books' page
+            return redirect('dashboard')
     else:
         form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})

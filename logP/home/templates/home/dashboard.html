@@ -51,6 +51,17 @@
             padding: 2rem;
             overflow-y: auto;
         }
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .profile-icon {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7B68EE;
+        }
         .main-content h1 {
             color: #7B68EE;
             font-size: 2rem;
@@ -62,7 +73,6 @@
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-
         .profile-section {
             display: flex;
             flex-wrap: wrap;
@@ -107,6 +117,22 @@
             object-fit: cover;
             aspect-ratio: 1/1;
         }
+        .stats-cards {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .stats-card {
+            background: white;
+            flex: 1;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        #profileSection {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -126,8 +152,32 @@
     </aside>
 
     <main class="main-content">
-        <h1>Welcome, {{ request.user.username }} 👋</h1>
-        <div class="card profile-section">
+        <!-- Top bar with profile icon -->
+        <div class="top-bar">
+            <i class="fas fa-user-circle profile-icon" onclick="toggleProfile()"></i>
+        </div>
+
+        <!-- Welcome message and stats (shown by default) -->
+        <div id="welcomeSection">
+            <h1>Welcome, {{ request.user.username }} 👋</h1>
+            <div class="stats-cards">
+                <div class="stats-card">
+                    <h2>Listed Books</h2>
+                    <p>0</p> <!-- Replace with count -->
+                </div>
+                <div class="stats-card">
+                    <h2>Exchanged Books</h2>
+                    <p>0</p>
+                </div>
+                <div class="stats-card">
+                    <h2>Favourite Books</h2>
+                    <p>0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile section (hidden by default) -->
+        <div id="profileSection" class="card profile-section">
             <div class="profile-info">
                 <div class="profile-group">
                     <label>Full Name</label>
@@ -178,6 +228,21 @@
         </div>
     </main>
 </div>
+
+<script>
+    function toggleProfile() {
+        const profileSection = document.getElementById('profileSection');
+        const welcomeSection = document.getElementById('welcomeSection');
+        
+        if (profileSection.style.display === "none") {
+            profileSection.style.display = "flex";
+            welcomeSection.style.display = "none";
+        } else {
+            profileSection.style.display = "none";
+            welcomeSection.style.display = "block";
+        }
+    }
+</script>
 
 </body>
 </html>
