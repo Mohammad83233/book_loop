@@ -6,82 +6,189 @@
     <title>My Listed Books - BookLoop</title>
     <link rel="stylesheet" href="{% static 'home/css/dashboard.css' %}">
     <style>
+        /* --- GENERAL PAGE STYLES --- */
         .container {
             padding: 2rem;
         }
+
+        /* --- BOOK GRID STYLES (The "Master" View) --- */
         .book-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            /* Creates a responsive grid that fits as many columns as possible */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 2rem;
         }
+
         .book-card {
             background-color: #fff;
             border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             padding: 1rem;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-            /* Added for better centering of the image container */
-            display: flex;
-            flex-direction: column;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer; /* Indicates the card is clickable */
         }
 
-        /* ✅ --- THIS IS THE CORRECTED STYLE FOR YOUR IMAGE --- ✅ */
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
         .book-card img {
-            /* Set a max height to control the size. Adjust this value as needed! */
-            max-height: 250px;
-            
-            /* Make sure the image doesn't overflow its container */
             max-width: 100%;
-
-            /* This is the key: it scales the image down to fit, without stretching or cropping */
-            object-fit: contain;
-
-            /* These lines center the image horizontally within the card */
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-
-            /* Keep the rounded corners */
-            border-radius: 8px;
+            height: 250px; /* Give a consistent height */
+            object-fit: contain; /* Ensures the whole image is visible */
+            margin-bottom: 1rem;
         }
 
-        .book-card .details {
-            margin-top: 1rem;
-        }
         .book-card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            color: #333;
+            margin: 0;
         }
-        .book-card p {
-            font-size: 0.9rem;
+
+        /* --- MODAL STYLES (The "Detail" View) --- */
+        .modal-backdrop {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            /* Center the modal content */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 800px; /* Limit max width for large screens */
+            max-height: 90vh; /* Limit max height */
+            overflow-y: auto;
+            display: flex;
+            gap: 2rem;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-image {
+            flex: 1; /* Take up 1 part of the space */
+            text-align: center;
+        }
+
+        .modal-image img {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+        }
+
+        .modal-details {
+            flex: 2; /* Take up 2 parts of the space */
+        }
+        
+        .modal-details h2 {
+            font-size: 2rem;
+            color: #7B68EE; /* Use your theme color */
+            margin-top: 0;
+        }
+
+        .modal-details p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .modal-details strong {
             color: #555;
         }
     </style>
 </head>
 <body>
+
     <div class="container">
         <h1>📚 My Listed Books</h1>
-        {% if books %}
-            <div class="book-list">
-                {% for book in books %}
-                    <div class="book-card">
-                        {% if book.image %}
-                            <img src="{{ book.image.url }}" alt="{{ book.title }}">
-                        {% else %}
-                            <img src="{% static 'home/images/default_book.png' %}" alt="No image">
-                        {% endif %}
-                        <div class="details">
-                            <h2>{{ book.title }}</h2>
-                            <p><strong>Author:</strong> {{ book.author }}</p>
-                            <p><strong>Genre:</strong> {{ book.genre.name }}</p>
-                            <p><strong>Condition:</strong> {{ book.condition }}</p>
-                            <p>{{ book.description|truncatewords:20 }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p>You haven't listed any books yet.</p>
-        {% endif %}
+
+        <!-- The main grid of books -->
+        <div class="book-list">
+            {% for book in books %}
+                <!-- This card is now a button that opens the modal -->
+                <div class="book-card" onclick="openModal('{{ book.id }}')">
+                    {% if book.image %}
+                        <img src="{{ book.image.url }}" alt="{{ book.title }}">
+                    {% else %}
+                        <img src="{% static 'home/images/default_book.png' %}" alt="No image">
+                    {% endif %}
+                    <h2>{{ book.title }}</h2>
+                </div>
+            {% endfor %}
+        </div>
     </div>
+
+
+    <!-- MODAL STRUCTURES -->
+    <!-- We loop through the books again to create a hidden modal for each one -->
+    {% for book in books %}
+    <div id="modal-{{ book.id }}" class="modal-backdrop" onclick="closeModal('{{ book.id }}')">
+        <div class="modal-content" onclick="event.stopPropagation()"> <!-- Prevents modal from closing when clicking inside content -->
+            
+            <span class="modal-close" onclick="closeModal('{{ book.id }}')">×</span>
+
+            <div class="modal-image">
+                {% if book.image %}
+                    <img src="{{ book.image.url }}" alt="{{ book.title }}">
+                {% else %}
+                    <img src="{% static 'home/images/default_book.png' %}" alt="No image">
+                {% endif %}
+            </div>
+
+            <div class="modal-details">
+                <h2>{{ book.title }}</h2>
+                <p><strong>Author:</strong> {{ book.author }}</p>
+                <p><strong>Genre:</strong> {{ book.genre.name }}</p>
+                <p><strong>Condition:</strong> {{ book.condition }}</p>
+                <p><strong>Description:</strong> {{ book.description }}</p>
+            </div>
+
+        </div>
+    </div>
+    {% endfor %}
+
+
+    <!-- JAVASCRIPT FOR MODAL INTERACTIVITY -->
+    <script>
+        // Function to open a specific modal
+        function openModal(bookId) {
+            const modal = document.getElementById('modal-' + bookId);
+            if (modal) {
+                modal.style.display = 'flex'; // Use flex to enable centering
+            }
+        }
+
+        // Function to close a specific modal
+        function closeModal(bookId) {
+            const modal = document.getElementById('modal-' + bookId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
 </body>
 </html>
