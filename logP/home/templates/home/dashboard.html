@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -143,7 +144,10 @@
         <ul>
             <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="{% url 'list_book' %}"><i class="fas fa-plus-square"></i> List Book</a></li>
-            <li><a href="#"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
+            
+            <!-- ✅ Corrected Link -->
+            <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
+            
             <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
             <li><a href="#"><i class="fas fa-exchange-alt"></i> Exchanged Books</a></li>
             <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Edit Profile</a></li>
@@ -235,7 +239,7 @@
         const profileSection = document.getElementById('profileSection');
         const welcomeSection = document.getElementById('welcomeSection');
         
-        if (profileSection.style.display === "none") {
+        if (profileSection.style.display === "none" || profileSection.style.display === "") {
             profileSection.style.display = "flex";
             welcomeSection.style.display = "none";
         } else {

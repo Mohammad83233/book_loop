@@ -110,3 +110,9 @@ def list_book(request):
     else:
         form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})
+
+# ✅ New view to show user's listed books
+@login_required
+def my_listed_books(request):
+    books = Book.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'home/my_listed_books.html', {'books': books})

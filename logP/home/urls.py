@@ -9,6 +9,10 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile_view, name='profile'),
 
-    # ✅ New route for listing a book
+    # ✅ Route for listing a book
     path('list-book/', views.list_book, name='list_book'),
+
+    # ✅ New route for viewing user's listed books
+    path('my-listed-books/', views.my_listed_books, name='my_listed_books'),
 ]
+
