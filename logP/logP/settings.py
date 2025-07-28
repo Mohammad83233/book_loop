@@ -99,3 +99,15 @@ LOGIN_URL = '/login/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- ✅ EMAIL CONFIGURATION FOR PASSWORD RESET ---
+# This setup uses Gmail's SMTP server to send real emails.
+# You must use a 16-character "App Password" from your Google Account, not your regular password.
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True  # Use True for a secure connection
+EMAIL_HOST_USER = 'gamerdeath887@gmail.com'  # 👈 Enter YOUR full Gmail address here
+EMAIL_HOST_PASSWORD = 'oeyp hixo tgkl zhuy' # 👈 Paste the App Password you created (no spaces)

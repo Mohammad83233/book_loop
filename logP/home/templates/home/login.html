@@ -100,9 +100,25 @@
             transform: translateY(-2px);
         }
 
-        /* Link to Signup Page */
+        /* Link to Signup/Forgot Password */
+        .extra-links {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .extra-links a {
+            color: #C06C4E;
+            text-decoration: none;
+            font-weight: 500;
+            transition: text-decoration 0.3s ease;
+        }
+        
+        .extra-links a:hover {
+            text-decoration: underline;
+        }
+
         .signup-link {
-            margin-top: 2rem;
+            margin-top: 1.5rem;
         }
 
         .signup-link a {
@@ -138,6 +154,11 @@
             
             <input type="submit" value="Login">
         </form>
+
+        <!-- ✅ FORGOT PASSWORD LINK ADDED HERE -->
+        <div class="extra-links">
+            <a href="{% url 'password_reset' %}">Forgot password?</a>
+        </div>
         
         <p class="signup-link">
             Don't have an account? <a href="/signup/">Sign Up</a>
