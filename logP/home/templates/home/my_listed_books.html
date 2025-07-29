@@ -8,17 +8,37 @@
     <style>
         /* --- GENERAL PAGE STYLES --- */
         .container {
-            padding: 2rem;
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
+            font-family: sans-serif;
         }
 
-        /* --- BOOK GRID STYLES (The "Master" View) --- */
+        /* ✅ --- NEW STYLES FOR SEARCH BAR & EMPTY STATE --- ✅ */
+        .search-container { margin-bottom: 2rem; }
+        .search-form { display: flex; }
+        .search-form input[type="text"] {
+            flex-grow: 1; padding: 12px; font-size: 1rem;
+            border: 1px solid #ddd; border-radius: 8px 0 0 8px;
+        }
+        .search-form button {
+            padding: 12px 25px; border: none; background-color: #7B68EE;
+            color: white; font-size: 1rem; cursor: pointer; border-radius: 0 8px 8px 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background-color: #fff;
+            border-radius: 12px;
+            grid-column: 1 / -1;
+        }
+
+        /* --- EXISTING BOOK GRID STYLES --- */
         .book-list {
             display: grid;
-            /* Creates a responsive grid that fits as many columns as possible */
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 2rem;
         }
-
         .book-card {
             background-color: #fff;
             border-radius: 12px;
@@ -26,30 +46,27 @@
             padding: 1rem;
             text-align: center;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer; /* Indicates the card is clickable */
+            cursor: pointer;
         }
-
         .book-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
-
         .book-card img {
             max-width: 100%;
-            height: 250px; /* Give a consistent height */
-            object-fit: contain; /* Ensures the whole image is visible */
+            height: 250px;
+            object-fit: contain;
             margin-bottom: 1rem;
         }
-
         .book-card h2 {
             font-size: 1rem;
             color: #333;
             margin: 0;
         }
 
-        /* --- MODAL STYLES (The "Detail" View) --- */
+        /* --- EXISTING MODAL STYLES --- */
         .modal-backdrop {
-            display: none; /* Hidden by default */
+            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -57,24 +74,21 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
-            /* Center the modal content */
             justify-content: center;
             align-items: center;
         }
-
         .modal-content {
             background-color: #fff;
             border-radius: 15px;
             padding: 2rem;
             width: 90%;
-            max-width: 800px; /* Limit max width for large screens */
-            max-height: 90vh; /* Limit max height */
+            max-width: 800px;
+            max-height: 90vh;
             overflow-y: auto;
             display: flex;
             gap: 2rem;
             position: relative;
         }
-
         .modal-close {
             position: absolute;
             top: 15px;
@@ -84,37 +98,30 @@
             cursor: pointer;
             transition: color 0.3s;
         }
-
         .modal-close:hover {
             color: #333;
         }
-
         .modal-image {
-            flex: 1; /* Take up 1 part of the space */
+            flex: 1;
             text-align: center;
         }
-
         .modal-image img {
             max-width: 100%;
             max-height: 70vh;
             object-fit: contain;
         }
-
         .modal-details {
-            flex: 2; /* Take up 2 parts of the space */
+            flex: 2;
         }
-        
         .modal-details h2 {
             font-size: 2rem;
-            color: #7B68EE; /* Use your theme color */
+            color: #7B68EE;
             margin-top: 0;
         }
-
         .modal-details p {
             font-size: 1rem;
             line-height: 1.6;
         }
-        
         .modal-details strong {
             color: #555;
         }
@@ -125,31 +132,47 @@
     <div class="container">
         <h1>📚 My Listed Books</h1>
 
-        <!-- The main grid of books -->
-        <div class="book-list">
-            {% for book in books %}
-                <!-- This card is now a button that opens the modal -->
-                <div class="book-card" onclick="openModal('{{ book.id }}')">
-                    {% if book.image %}
-                        <img src="{{ book.image.url }}" alt="{{ book.title }}">
-                    {% else %}
-                        <img src="{% static 'home/images/default_book.png' %}" alt="No image">
-                    {% endif %}
-                    <h2>{{ book.title }}</h2>
-                </div>
-            {% endfor %}
+        <!-- ✅ ADDED THE SEARCH FORM -->
+        <div class="search-container">
+            <form method="GET" action="{% url 'my_listed_books' %}" class="search-form">
+                <input type="text" name="q" placeholder="Search your listed books..." value="{{ query|default:'' }}">
+                <button type="submit">Search</button>
+            </form>
         </div>
+
+        <!-- ✅ UPDATED THE WRAPPER TO HANDLE THE EMPTY STATE -->
+        {% if books %}
+            <div class="book-list">
+                {% for book in books %}
+                    <div class="book-card" onclick="openModal('{{ book.id }}')">
+                        {% if book.image %}
+                            <img src="{{ book.image.url }}" alt="{{ book.title }}">
+                        {% else %}
+                            <img src="{% static 'home/images/default_book.png' %}" alt="No image">
+                        {% endif %}
+                        <h2>{{ book.title }}</h2>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                {% if query %}
+                    <h3>No Books Found</h3>
+                    <p>Your search for "{{ query }}" did not match any of your listed books.</p>
+                {% else %}
+                    <h3>You Haven't Listed Any Books Yet</h3>
+                    <p>Click "List Book" in the sidebar to get started!</p>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 
 
-    <!-- MODAL STRUCTURES -->
-    <!-- We loop through the books again to create a hidden modal for each one -->
+    <!-- MODAL STRUCTURES (Unchanged) -->
     {% for book in books %}
     <div id="modal-{{ book.id }}" class="modal-backdrop" onclick="closeModal('{{ book.id }}')">
-        <div class="modal-content" onclick="event.stopPropagation()"> <!-- Prevents modal from closing when clicking inside content -->
-            
+        <div class="modal-content" onclick="event.stopPropagation()">
             <span class="modal-close" onclick="closeModal('{{ book.id }}')">×</span>
-
             <div class="modal-image">
                 {% if book.image %}
                     <img src="{{ book.image.url }}" alt="{{ book.title }}">
@@ -157,7 +180,6 @@
                     <img src="{% static 'home/images/default_book.png' %}" alt="No image">
                 {% endif %}
             </div>
-
             <div class="modal-details">
                 <h2>{{ book.title }}</h2>
                 <p><strong>Author:</strong> {{ book.author }}</p>
@@ -165,23 +187,20 @@
                 <p><strong>Condition:</strong> {{ book.condition }}</p>
                 <p><strong>Description:</strong> {{ book.description }}</p>
             </div>
-
         </div>
     </div>
     {% endfor %}
 
 
-    <!-- JAVASCRIPT FOR MODAL INTERACTIVITY -->
+    <!-- JAVASCRIPT FOR MODAL (Unchanged) -->
     <script>
-        // Function to open a specific modal
         function openModal(bookId) {
             const modal = document.getElementById('modal-' + bookId);
             if (modal) {
-                modal.style.display = 'flex'; // Use flex to enable centering
+                modal.style.display = 'flex';
             }
         }
 
-        // Function to close a specific modal
         function closeModal(bookId) {
             const modal = document.getElementById('modal-' + bookId);
             if (modal) {
