@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Dashboard - BookLoop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
     <style>
         body {
@@ -63,77 +63,77 @@
             cursor: pointer;
             color: #7B68EE;
         }
-        .main-content h1 {
-            color: #7B68EE;
-            font-size: 2rem;
-            margin-bottom: 1rem;
+
+        /* --- STYLES FOR WELCOME SECTION & CARDS --- */
+        #welcomeSection h1 {
+            /* ✅ COLOR CHANGED HERE */
+            color: #7B68EE; /* The entire heading is now the theme purple color */
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
         }
-        .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        }
-        .profile-section {
-            display: flex;
-            flex-wrap: wrap;
+        /* The span-specific style is no longer needed */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
         }
-        .profile-info {
-            flex: 2;
-        }
-        .profile-group {
-            margin-bottom: 1rem;
-        }
-        .profile-group label {
-            font-weight: 600;
-            display: block;
-            margin-bottom: 0.3rem;
-        }
-        .profile-group .value {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .genre-box {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.8rem 0;
-        }
-        .genre-tag {
-            background-color: #7B68EE;
-            color: white;
-            padding: 0.3rem 0.7rem;
-            border-radius: 15px;
-            font-size: 0.9rem;
-        }
-        .profile-picture {
-            flex: 1;
-            max-width: 250px;
-        }
-        .profile-picture img {
-            width: 100%;
-            border-radius: 15px;
-            object-fit: cover;
-            aspect-ratio: 1/1;
-        }
-        .stats-cards {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1rem;
+        a.stats-card-link {
+            text-decoration: none;
         }
         .stats-card {
             background: white;
-            flex: 1;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+        }
+        .stats-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        .card-image-container {
+            height: 160px;
+        }
+        .card-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-content {
             padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            text-align: center;
         }
-        #profileSection {
-            display: none;
+        .card-content h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.5rem 0;
         }
+        .card-content p {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #7B68EE;
+            margin: 0;
+            line-height: 1;
+        }
+        .card-content span {
+            font-size: 1rem;
+            color: #888;
+        }
+        
+        /* --- Original Profile Section Styles (Unchanged) --- */
+        #profileSection { display: none; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .profile-section { display: flex; flex-wrap: wrap; gap: 2rem; }
+        .profile-info { flex: 2; }
+        .profile-group { margin-bottom: 1rem; }
+        .profile-group label { font-weight: 600; display: block; margin-bottom: 0.3rem; }
+        .profile-group .value { background: #f0f0f0; padding: 10px; border-radius: 8px; }
+        .genre-box { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.8rem 0; }
+        .genre-tag { background-color: #7B68EE; color: white; padding: 0.3rem 0.7rem; border-radius: 15px; font-size: 0.9rem; }
+        .profile-picture { flex: 1; max-width: 250px; }
+        .profile-picture img { width: 100%; border-radius: 15px; object-fit: cover; aspect-ratio: 1/1; }
     </style>
 </head>
 <body>
@@ -143,10 +143,7 @@
         <div class="logo">bOOk lOOp</div>
         <ul>
             <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-            
-            <!-- ✅ LINK TO BROWSE PAGE ADDED HERE -->
             <li><a href="{% url 'browse_books' %}"><i class="fas fa-search"></i> Browse Books</a></li>
-            
             <li><a href="{% url 'list_book' %}"><i class="fas fa-plus-square"></i> List Book</a></li>
             <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
             <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
@@ -157,32 +154,53 @@
     </aside>
 
     <main class="main-content">
-        <!-- Top bar with profile icon -->
         <div class="top-bar">
             <i class="fas fa-user-circle profile-icon" onclick="toggleProfile()"></i>
         </div>
 
-        <!-- Welcome message and stats (shown by default) -->
         <div id="welcomeSection">
+            <!-- ✅ The <span> tag is no longer needed -->
             <h1>Welcome, {{ request.user.username }} 👋</h1>
             <div class="stats-cards">
+
+                <a href="{% url 'list_book' %}" class="stats-card-link">
+                    <div class="stats-card">
+                        <div class="card-image-container">
+                            <img src="https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=1887&auto=format&fit=crop" alt="A wall of books in a library">
+                        </div>
+                        <div class="card-content">
+                            <h2>List a Book</h2>
+                            <p>{{ listed_books_count }}</p>
+                            <span>books listed</span>
+                        </div>
+                    </div>
+                </a>
+
                 <div class="stats-card">
-                    <h2>Listed Books</h2>
-                        <p>{{ listed_books_count }}</p>
-                </div>
-                <div class="stats-card">
-                    <h2>Exchanged Books</h2>
+                    <div class="card-image-container">
+                        <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1887&auto=format&fit=crop" alt="An open book with text">
+                    </div>
+                    <div class="card-content">
+                        <h2>Exchanged</h2>
                         <p>{{ exchanged_books_count }}</p>
+                        <span>books</span>
+                    </div>
                 </div>
+
                 <div class="stats-card">
-                    <h2>Favourite Books</h2>
+                    <div class="card-image-container">
+                        <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format&fit=crop" alt="A person reading a book in a cozy setting">
+                    </div>
+                    <div class="card-content">
+                        <h2>Favourites</h2>
                         <p>{{ favourite_books_count }}</p>
+                        <span>books</span>
+                    </div>
                 </div>
 
             </div>
         </div>
 
-        <!-- Profile section (hidden by default) -->
         <div id="profileSection" class="card profile-section">
             <div class="profile-info">
                 <div class="profile-group">
@@ -222,7 +240,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="profile-picture">
                 <label>Profile Picture</label>
                 {% if profile.profile_pic %}
