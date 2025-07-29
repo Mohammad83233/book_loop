@@ -143,11 +143,12 @@
         <div class="logo">bOOk lOOp</div>
         <ul>
             <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+            
+            <!-- ✅ LINK TO BROWSE PAGE ADDED HERE -->
+            <li><a href="{% url 'browse_books' %}"><i class="fas fa-search"></i> Browse Books</a></li>
+            
             <li><a href="{% url 'list_book' %}"><i class="fas fa-plus-square"></i> List Book</a></li>
-            
-            <!-- ✅ Corrected Link -->
             <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
-            
             <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
             <li><a href="#"><i class="fas fa-exchange-alt"></i> Exchanged Books</a></li>
             <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Edit Profile</a></li>

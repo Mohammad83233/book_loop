@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Browse Books - BookLoop</title>
+    <style>
+        /* You can move this CSS to a dedicated file later */
+        body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        .search-container { margin-bottom: 2rem; }
+        .search-form { display: flex; }
+        .search-form input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px 0 0 8px;
+        }
+        .search-form button {
+            padding: 12px 25px;
+            border: none;
+            background-color: #7B68EE; /* Your theme color */
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 0 8px 8px 0;
+        }
+        .book-item {
+            display: flex;
+            gap: 1.5rem;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .book-item img {
+            height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .book-item-details h3 { margin-top: 0; }
+        .empty-state { text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Browse Available Books</h1>
+    <p style="color: #555;">Here you can find books listed by other members of the community.</p>
+
+    <!-- STEP 3.1: The Search Form -->
+    <div class="search-container">
+        <form method="GET" action="{% url 'browse_books' %}" class="search-form">
+            <!-- The 'name="q"' is what our view looks for. -->
+            <!-- The 'value' attribute keeps the search term in the box after submitting. -->
+            <input type="text" name="q" placeholder="Search by title or author..." value="{{ query|default:'' }}">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <!-- STEP 3.2: The Book List -->
+    <div class="book-list">
+        {% for book in books %}
+            <div class="book-item">
+                <img src="{{ book.image.url }}" alt="Cover of {{ book.title }}">
+                <div class="book-item-details">
+                    <h3>{{ book.title }}</h3>
+                    <p><strong>Author:</strong> {{ book.author }}</p>
+                    <p><strong>Genre:</strong> {{ book.genre.name }}</p>
+                    <p><strong>Condition:</strong> {{ book.condition }}</p>
+                    <p><em>Listed by: {{ book.user.username }}</em></p>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-state">
+                {% if query %}
+                    <h3>No Results Found</h3>
+                    <p>We couldn't find any books matching your search for "{{ query }}". Try another search?</p>
+                {% else %}
+                    <h3>The Marketplace is Empty!</h3>
+                    <p>No books have been listed by other users yet. Be the first!</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>
