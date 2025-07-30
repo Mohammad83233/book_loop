@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit: {{ book.title }}</title>
+    <!-- You can link your main CSS file here -->
+    <style>
+        body { font-family: sans-serif; background-color: #f4f7fc; }
+        .container { max-width: 600px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        form { display: flex; flex-direction: column; gap: 1rem; }
+        button { padding: 10px; background-color: #7B68EE; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        a { color: #7B68EE; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Edit Book</h1>
+        <p>You are editing: <strong>{{ book.title }}</strong></p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Save Changes</button>
+        </form>
+
+        <p style="margin-top: 1rem;"><a href="{% url 'my_listed_books' %}">Cancel and go back</a></p>
+    </div>
+
+</body>
+</html>

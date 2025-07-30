@@ -6,7 +6,6 @@
     <title>My Listed Books - BookLoop</title>
     <link rel="stylesheet" href="{% static 'home/css/dashboard.css' %}">
     <style>
-        /* --- GENERAL PAGE STYLES --- */
         .container {
             max-width: 900px;
             margin: 2rem auto;
@@ -14,7 +13,6 @@
             font-family: sans-serif;
         }
 
-        /* ✅ --- NEW STYLES FOR SEARCH BAR & EMPTY STATE --- ✅ */
         .search-container { margin-bottom: 2rem; }
         .search-form { display: flex; }
         .search-form input[type="text"] {
@@ -33,7 +31,6 @@
             grid-column: 1 / -1;
         }
 
-        /* --- EXISTING BOOK GRID STYLES --- */
         .book-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -64,7 +61,6 @@
             margin: 0;
         }
 
-        /* --- EXISTING MODAL STYLES --- */
         .modal-backdrop {
             display: none;
             position: fixed;
@@ -125,6 +121,15 @@
         .modal-details strong {
             color: #555;
         }
+        
+        /* ✅ --- NEW STYLES FOR ACTION BUTTONS --- ✅ */
+        .modal-actions {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -132,7 +137,6 @@
     <div class="container">
         <h1>📚 My Listed Books</h1>
 
-        <!-- ✅ ADDED THE SEARCH FORM -->
         <div class="search-container">
             <form method="GET" action="{% url 'my_listed_books' %}" class="search-form">
                 <input type="text" name="q" placeholder="Search your listed books..." value="{{ query|default:'' }}">
@@ -140,7 +144,6 @@
             </form>
         </div>
 
-        <!-- ✅ UPDATED THE WRAPPER TO HANDLE THE EMPTY STATE -->
         {% if books %}
             <div class="book-list">
                 {% for book in books %}
@@ -168,7 +171,6 @@
     </div>
 
 
-    <!-- MODAL STRUCTURES (Unchanged) -->
     {% for book in books %}
     <div id="modal-{{ book.id }}" class="modal-backdrop" onclick="closeModal('{{ book.id }}')">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -186,13 +188,21 @@
                 <p><strong>Genre:</strong> {{ book.genre.name }}</p>
                 <p><strong>Condition:</strong> {{ book.condition }}</p>
                 <p><strong>Description:</strong> {{ book.description }}</p>
+
+                <!-- ✅ ADDED EDIT AND DELETE BUTTONS HERE -->
+                <div class="modal-actions">
+                    <a href="{% url 'edit_book' book.id %}" style="flex: 1; text-align: center; padding: 10px; background-color: #f0f0f0; color: #333; text-decoration: none; border-radius: 8px;">Edit Book</a>
+                    <form method="POST" action="{% url 'delete_book' book.id %}" onsubmit="return confirm('Are you sure you want to delete this book?');" style="flex: 1;">
+                        {% csrf_token %}
+                        <button type="submit" style="width: 100%; padding: 10px; background-color: #ffdddd; color: #d9534f; border: 1px solid #d9534f; border-radius: 8px; cursor: pointer;">Delete Book</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
     {% endfor %}
 
 
-    <!-- JAVASCRIPT FOR MODAL (Unchanged) -->
     <script>
         function openModal(bookId) {
             const modal = document.getElementById('modal-' + bookId);

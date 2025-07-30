@@ -1,5 +1,5 @@
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -106,23 +106,17 @@ def list_book(request):
         form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})
 
-# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def my_listed_books(request):
-    # Get the search query from the URL's GET parameters.
     query = request.GET.get('q')
-
-    # Start with the base queryset: all books for the current user.
     books = Book.objects.filter(user=request.user).order_by('-created_at')
 
-    # If a search query is present, filter the queryset.
     if query:
         books = books.filter(
             Q(title__icontains=query) |
             Q(author__icontains=query)
         ).distinct()
 
-    # Pass the (potentially filtered) list of books and the query to the template.
     context = {
         'books': books,
         'query': query,
@@ -146,3 +140,42 @@ def browse_books(request):
         'query': query,
     }
     return render(request, 'home/browse_books.html', context)
+
+# --- ✅ ADDED VIEWS FOR EDIT AND DELETE ---
+
+@login_required
+def edit_book(request, book_id):
+    # Securely fetch the book, ensuring it belongs to the logged-in user
+    book = get_object_or_404(Book, id=book_id, user=request.user)
+
+    if request.method == 'POST':
+        form = BookForm(request.POST, request.FILES, instance=book)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"'{book.title}' has been updated successfully.")
+            return redirect('my_listed_books')
+    else:
+        # Pre-populate the form with the existing book's data
+        form = BookForm(instance=book)
+
+    context = {
+        'form': form,
+        'book': book
+    }
+    return render(request, 'home/edit_book.html', context)
+
+
+@login_required
+def delete_book(request, book_id):
+    # Securely fetch the book
+    book = get_object_or_404(Book, id=book_id, user=request.user)
+
+    # Only allow deletion via POST request for security
+    if request.method == 'POST':
+        book_title = book.title
+        book.delete()
+        messages.success(request, f"'{book_title}' has been deleted successfully.")
+        return redirect('my_listed_books')
+
+    # If accessed via GET, just redirect back (or show a confirmation page)
+    return redirect('my_listed_books')
