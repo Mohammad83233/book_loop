@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
-from .models import UserProfile, Book
+from .models import UserProfile, Book, Genre
 from .forms import UserProfileForm, BookForm
 
 
@@ -124,28 +124,41 @@ def my_listed_books(request):
     return render(request, 'home/my_listed_books.html', context)
 
 
+# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def browse_books(request):
-    query = request.GET.get('q')
-    books = Book.objects.exclude(user=request.user)
+    queryset = Book.objects.exclude(user=request.user).order_by('-created_at')
+    genres = Genre.objects.all()
 
-    if query:
-        books = books.filter(
-            Q(title__icontains=query) |
-            Q(author__icontains=query)
+    search_query = request.GET.get('q')
+    selected_genre_id = request.GET.get('genre')
+    selected_condition = request.GET.get('condition')
+
+    if search_query:
+        queryset = queryset.filter(
+            Q(title__icontains=search_query) |
+            Q(author__icontains=search_query)
         ).distinct()
 
+    if selected_genre_id:
+        queryset = queryset.filter(genre__id=selected_genre_id)
+
+    if selected_condition:
+        queryset = queryset.filter(condition=selected_condition)
+
     context = {
-        'books': books,
-        'query': query,
+        'books': queryset,
+        'genres': genres,
+        'search_query': search_query,
+        # Safely convert to integer for template comparison, default to 0 if None
+        'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
+        'selected_condition': selected_condition,
     }
     return render(request, 'home/browse_books.html', context)
 
-# --- ✅ ADDED VIEWS FOR EDIT AND DELETE ---
 
 @login_required
 def edit_book(request, book_id):
-    # Securely fetch the book, ensuring it belongs to the logged-in user
     book = get_object_or_404(Book, id=book_id, user=request.user)
 
     if request.method == 'POST':
@@ -155,7 +168,6 @@ def edit_book(request, book_id):
             messages.success(request, f"'{book.title}' has been updated successfully.")
             return redirect('my_listed_books')
     else:
-        # Pre-populate the form with the existing book's data
         form = BookForm(instance=book)
 
     context = {
@@ -167,15 +179,12 @@ def edit_book(request, book_id):
 
 @login_required
 def delete_book(request, book_id):
-    # Securely fetch the book
     book = get_object_or_404(Book, id=book_id, user=request.user)
 
-    # Only allow deletion via POST request for security
     if request.method == 'POST':
         book_title = book.title
         book.delete()
         messages.success(request, f"'{book_title}' has been deleted successfully.")
         return redirect('my_listed_books')
 
-    # If accessed via GET, just redirect back (or show a confirmation page)
     return redirect('my_listed_books')
