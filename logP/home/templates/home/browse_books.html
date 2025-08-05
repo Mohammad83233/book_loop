@@ -8,12 +8,11 @@
         body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
         .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
         
-        /* ✅ --- NEW STYLES FOR THE HEADER AREA --- ✅ */
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.5rem; /* Reduced bottom margin for the h1 */
+            margin-bottom: 0.5rem;
         }
         .back-link {
             text-decoration: none;
@@ -96,12 +95,12 @@
         .details-toggle-btn:hover {
             background-color: #7B68EE; color: white;
         }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- ✅ --- PAGE HEADER WITH BACK LINK ADDED --- ✅ -->
     <div class="page-header">
         <h1>Browse Available Books</h1>
         <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>

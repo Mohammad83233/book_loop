@@ -12,8 +12,6 @@ urlpatterns = [
     path('list-book/', views.list_book, name='list_book'),
     path('my-listed-books/', views.my_listed_books, name='my_listed_books'),
     path('browse/', views.browse_books, name='browse_books'),
-
-    # --- ✅ ADDED URLS FOR EDIT AND DELETE ---
     path('book/edit/<int:book_id>/', views.edit_book, name='edit_book'),
     path('book/delete/<int:book_id>/', views.delete_book, name='delete_book'),
 

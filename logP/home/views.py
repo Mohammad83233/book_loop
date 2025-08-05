@@ -106,25 +106,42 @@ def list_book(request):
         form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})
 
+# --- ✅ MODIFIED THIS VIEW TO ADD ADVANCED FILTERING ---
 @login_required
 def my_listed_books(request):
-    query = request.GET.get('q')
-    books = Book.objects.filter(user=request.user).order_by('-created_at')
+    # Start with ONLY the books that belong to the logged-in user.
+    queryset = Book.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Fetch all genres to populate the filter dropdown.
+    genres = Genre.objects.all()
 
-    if query:
-        books = books.filter(
-            Q(title__icontains=query) |
-            Q(author__icontains=query)
+    # Get search/filter parameters from the URL.
+    search_query = request.GET.get('q')
+    selected_genre_id = request.GET.get('genre')
+    selected_condition = request.GET.get('condition')
+
+    # Apply filters if they exist.
+    if search_query:
+        queryset = queryset.filter(
+            Q(title__icontains=search_query) |
+            Q(author__icontains=search_query)
         ).distinct()
 
+    if selected_genre_id:
+        queryset = queryset.filter(genre__id=selected_genre_id)
+
+    if selected_condition:
+        queryset = queryset.filter(condition=selected_condition)
+
     context = {
-        'books': books,
-        'query': query,
+        'books': queryset,
+        'genres': genres,
+        'search_query': search_query,
+        'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
+        'selected_condition': selected_condition,
     }
     return render(request, 'home/my_listed_books.html', context)
 
-
-# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def browse_books(request):
     queryset = Book.objects.exclude(user=request.user).order_by('-created_at')
@@ -150,12 +167,10 @@ def browse_books(request):
         'books': queryset,
         'genres': genres,
         'search_query': search_query,
-        # Safely convert to integer for template comparison, default to 0 if None
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
         'selected_condition': selected_condition,
     }
     return render(request, 'home/browse_books.html', context)
-
 
 @login_required
 def edit_book(request, book_id):

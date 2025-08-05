@@ -4,33 +4,72 @@
 <head>
     <meta charset="UTF-8">
     <title>My Listed Books - BookLoop</title>
-    <link rel="stylesheet" href="{% static 'home/css/dashboard.css' %}">
     <style>
-        .container {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 1rem;
-            font-family: sans-serif;
+        body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .back-link {
+            text-decoration: none;
+            color: #7B68EE;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        .search-container { margin-bottom: 2rem; }
-        .search-form { display: flex; }
-        .search-form input[type="text"] {
-            flex-grow: 1; padding: 12px; font-size: 1rem;
-            border: 1px solid #ddd; border-radius: 8px 0 0 8px;
-        }
-        .search-form button {
-            padding: 12px 25px; border: none; background-color: #7B68EE;
-            color: white; font-size: 1rem; cursor: pointer; border-radius: 0 8px 8px 0;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
+        .filter-bar {
             background-color: #fff;
+            padding: 1.5rem;
             border-radius: 12px;
-            grid-column: 1 / -1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            align-items: end;
         }
-
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 0.5rem;
+        }
+        .filter-group input,
+        .filter-group select {
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .filter-bar button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #7B68EE;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 8px;
+            height: 42px;
+        }
+        .clear-filters {
+            text-align: right;
+            margin: -1rem 0 2rem 0;
+        }
+        .clear-filters a {
+            color: #7B68EE;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+        
+        /* --- Original Book Card Styles --- */
         .book-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -61,6 +100,7 @@
             margin: 0;
         }
 
+        /* --- Original Modal Styles --- */
         .modal-backdrop {
             display: none;
             position: fixed;
@@ -121,8 +161,6 @@
         .modal-details strong {
             color: #555;
         }
-        
-        /* ✅ --- NEW STYLES FOR ACTION BUTTONS --- ✅ */
         .modal-actions {
             margin-top: 2rem;
             padding-top: 1rem;
@@ -135,13 +173,49 @@
 <body>
 
     <div class="container">
-        <h1>📚 My Listed Books</h1>
+        <div class="page-header">
+            <h1>My Listed Books</h1>
+            <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
+        </div>
 
-        <div class="search-container">
-            <form method="GET" action="{% url 'my_listed_books' %}" class="search-form">
-                <input type="text" name="q" placeholder="Search your listed books..." value="{{ query|default:'' }}">
-                <button type="submit">Search</button>
-            </form>
+        <p style="color: #555; margin-bottom: 2rem;">Manage and organize the books you have listed for exchange.</p>
+
+        <form method="GET" action="{% url 'my_listed_books' %}" id="filter-form">
+            <div class="filter-bar">
+                <div class="filter-group" style="grid-column: 1 / -1;">
+                    <label for="search-input">Search by Title / Author</label>
+                    <input type="text" id="search-input" name="q" placeholder="Search your listed books..." value="{{ search_query|default:'' }}">
+                </div>
+                <div class="filter-group">
+                    <label for="genre-select">Genre</label>
+                    <select name="genre" id="genre-select" onchange="this.form.submit()">
+                        <option value="">All Genres</option>
+                        {% for genre in genres %}
+                            <option value="{{ genre.id }}" {% if genre.id == selected_genre_id %}selected{% endif %}>
+                                {{ genre.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="condition-select">Condition</label>
+                    <select name="condition" id="condition-select" onchange="this.form.submit()">
+                        <option value="">All Conditions</option>
+                        <option value="New" {% if selected_condition == 'New' %}selected{% endif %}>New</option>
+                        <option value="Like New" {% if selected_condition == 'Like New' %}selected{% endif %}>Like New</option>
+                        <option value="Good" {% if selected_condition == 'Good' %}selected{% endif %}>Good</option>
+                        <option value="Fair" {% if selected_condition == 'Fair' %}selected{% endif %}>Fair</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label> </label>
+                    <button type="submit">Search</button>
+                </div>
+            </div>
+        </form>
+    
+        <div class="clear-filters">
+            <a href="{% url 'my_listed_books' %}">Clear All Filters</a>
         </div>
 
         {% if books %}
@@ -158,10 +232,10 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="empty-state">
-                {% if query %}
+            <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px; grid-column: 1 / -1;">
+                {% if search_query or selected_genre_id or selected_condition %}
                     <h3>No Books Found</h3>
-                    <p>Your search for "{{ query }}" did not match any of your listed books.</p>
+                    <p>Your search or filter criteria did not match any of your listed books.</p>
                 {% else %}
                     <h3>You Haven't Listed Any Books Yet</h3>
                     <p>Click "List Book" in the sidebar to get started!</p>
@@ -170,7 +244,7 @@
         {% endif %}
     </div>
 
-
+    <!-- MODAL STRUCTURES -->
     {% for book in books %}
     <div id="modal-{{ book.id }}" class="modal-backdrop" onclick="closeModal('{{ book.id }}')">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -189,7 +263,7 @@
                 <p><strong>Condition:</strong> {{ book.condition }}</p>
                 <p><strong>Description:</strong> {{ book.description }}</p>
 
-                <!-- ✅ ADDED EDIT AND DELETE BUTTONS HERE -->
+                <!-- ✅ Edit and Delete buttons are correctly placed here -->
                 <div class="modal-actions">
                     <a href="{% url 'edit_book' book.id %}" style="flex: 1; text-align: center; padding: 10px; background-color: #f0f0f0; color: #333; text-decoration: none; border-radius: 8px;">Edit Book</a>
                     <form method="POST" action="{% url 'delete_book' book.id %}" onsubmit="return confirm('Are you sure you want to delete this book?');" style="flex: 1;">
@@ -201,7 +275,6 @@
         </div>
     </div>
     {% endfor %}
-
 
     <script>
         function openModal(bookId) {

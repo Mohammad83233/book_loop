@@ -15,8 +15,8 @@ class UserProfile(models.Model):
     last_name = models.CharField(max_length=100, blank=True)
 
     gender = models.CharField(
-        max_length=1,
-        choices=[('M', 'Male'), ('F', 'Female')],
+        max_length=10,
+        choices=[('Male', 'Male'), ('Female', 'Female')],
         blank=True
     )
 
@@ -43,13 +43,13 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.user.username
 
-# ✅ Book model for listing books
+# Book model for listing books
 class Book(models.Model):
     CONDITION_CHOICES = [
-        ('new', 'New'),
-        ('good', 'Good'),
-        ('fair', 'Fair'),
-        ('poor', 'Poor'),
+        ('New', 'New'),
+        ('Like New', 'Like New'),
+        ('Good', 'Good'),
+        ('Fair', 'Fair'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='books')
