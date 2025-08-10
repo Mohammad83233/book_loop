@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat for {{ room.book.title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fe;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            max-height: 800px;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        .chat-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+        .chat-header p {
+            margin: 0;
+            color: #777;
+        }
+        .chat-log {
+            padding: 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            display: flex;
+            margin-bottom: 1rem;
+            max-width: 75%;
+        }
+        .message.sent {
+            align-self: flex-end;
+        }
+        .message.received {
+            align-self: flex-start;
+        }
+        .message-bubble {
+            padding: 0.75rem 1.25rem;
+            border-radius: 20px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .message.sent .message-bubble {
+            background-color: #7B68EE;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .message.received .message-bubble {
+            background-color: #f1f1f1;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input-form {
+            display: flex;
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+            gap: 1rem;
+        }
+        #message-content-input {
+            flex-grow: 1;
+            padding: 0.75rem 1.25rem;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 1rem;
+        }
+        #message-content-input:focus {
+            outline: none;
+            border-color: #7B68EE;
+        }
+        #send-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background-color: #7B68EE;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #send-button:hover {
+            background-color: #6a5acd;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>{{ room.book.title }}</h2>
+            {% if room.buyer == request.user %}
+                <p>Chat with {{ room.seller.username }}</p>
+            {% else %}
+                <p>Chat with {{ room.buyer.username }}</p>
+            {% endif %}
+        </div>
+
+        <div class="chat-log" id="chat-log">
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="message {% if msg.sender == request.user %}sent{% else %}received{% endif %}">
+                        <div class="message-bubble">
+                            {{ msg.message_content }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p id="no-messages-yet" style="text-align: center; color: #999;">No messages yet. Start the conversation!</p>
+            {% endif %}
+        </div>
+
+        <form method="POST" action="{% url 'send_message' room.id %}" class="chat-input-form">
+            {% csrf_token %}
+            <input id="message-content-input" type="text" name="message_content" placeholder="Type a message..." required autocomplete="off">
+            <button id="send-button" type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Auto-scroll to the bottom of the chat log
+        const chatLog = document.getElementById('chat-log');
+        chatLog.scrollTop = chatLog.scrollHeight;
+    </script>
+</body>
+</html>

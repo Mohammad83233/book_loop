@@ -64,15 +64,12 @@
             color: #7B68EE;
         }
 
-        /* --- STYLES FOR WELCOME SECTION & CARDS --- */
         #welcomeSection h1 {
-            /* ✅ COLOR CHANGED HERE */
-            color: #7B68EE; /* The entire heading is now the theme purple color */
+            color: #7B68EE;
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 2rem;
         }
-        /* The span-specific style is no longer needed */
         .stats-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -122,7 +119,6 @@
             color: #888;
         }
         
-        /* --- Original Profile Section Styles (Unchanged) --- */
         #profileSection { display: none; }
         .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .profile-section { display: flex; flex-wrap: wrap; gap: 2rem; }
@@ -146,8 +142,11 @@
             <li><a href="{% url 'browse_books' %}"><i class="fas fa-search"></i> Browse Books</a></li>
             <li><a href="{% url 'list_book' %}"><i class="fas fa-plus-square"></i> List Book</a></li>
             <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
+            
+            <!-- ✅ --- MODIFIED THIS SECTION --- ✅ -->
+            <li><a href="{% url 'my_chats' %}"><i class="fas fa-comments"></i> My Chats</a></li>
             <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
-            <li><a href="#"><i class="fas fa-exchange-alt"></i> Exchanged Books</a></li>
+            
             <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Edit Profile</a></li>
             <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
@@ -159,7 +158,6 @@
         </div>
 
         <div id="welcomeSection">
-            <!-- ✅ The <span> tag is no longer needed -->
             <h1>Welcome, {{ request.user.username }} 👋</h1>
             <div class="stats-cards">
 

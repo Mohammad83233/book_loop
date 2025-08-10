@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
-from .models import UserProfile, Book, Genre
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage
 from .forms import UserProfileForm, BookForm
 
 
@@ -106,21 +106,16 @@ def list_book(request):
         form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})
 
-# --- ✅ MODIFIED THIS VIEW TO ADD ADVANCED FILTERING ---
 @login_required
 def my_listed_books(request):
-    # Start with ONLY the books that belong to the logged-in user.
     queryset = Book.objects.filter(user=request.user).order_by('-created_at')
     
-    # Fetch all genres to populate the filter dropdown.
     genres = Genre.objects.all()
 
-    # Get search/filter parameters from the URL.
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
     selected_condition = request.GET.get('condition')
 
-    # Apply filters if they exist.
     if search_query:
         queryset = queryset.filter(
             Q(title__icontains=search_query) |
@@ -203,3 +198,69 @@ def delete_book(request, book_id):
         return redirect('my_listed_books')
 
     return redirect('my_listed_books')
+
+
+# --- VIEWS FOR SIMPLE CHAT SYSTEM ---
+
+@login_required
+def start_chat(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    if book.user == request.user:
+        messages.error(request, "You cannot start a chat about your own book.")
+        return redirect('browse_books')
+    
+    chat_room, created = ChatRoom.objects.get_or_create(
+        book=book,
+        buyer=request.user,
+        seller=book.user
+    )
+    return redirect('chat_room', room_id=chat_room.id)
+
+# --- ✅ MODIFIED THIS VIEW ---
+@login_required
+def chat_room(request, room_id):
+    chat_room = get_object_or_404(ChatRoom, id=room_id)
+    if request.user != chat_room.buyer and request.user != chat_room.seller:
+        messages.error(request, "You do not have permission to view this chat.")
+        return redirect('dashboard')
+    
+    messages_list = ChatMessage.objects.filter(room=chat_room).order_by('timestamp')
+    
+    # Mark messages sent by the OTHER user as read
+    ChatMessage.objects.filter(room=chat_room).exclude(sender=request.user).update(is_read=True)
+    
+    context = {
+        'room': chat_room,
+        'messages': messages_list
+    }
+    return render(request, 'home/simple_chat.html', context)
+
+@login_required
+def send_message(request, room_id):
+    chat_room = get_object_or_404(ChatRoom, id=room_id)
+    if request.method == 'POST':
+        content = request.POST.get('message_content', '').strip()
+        if content:
+            ChatMessage.objects.create(
+                room=chat_room,
+                sender=request.user,
+                message_content=content
+            )
+    return redirect('chat_room', room_id=room_id)
+
+# --- ✅ MODIFIED THIS VIEW ---
+@login_required
+def my_chats(request):
+    chat_rooms = ChatRoom.objects.filter(
+        Q(buyer=request.user) | Q(seller=request.user)
+    ).order_by('-created_at')
+
+    for room in chat_rooms:
+        room.unread_count = ChatMessage.objects.filter(
+            room=room, is_read=False
+        ).exclude(sender=request.user).count()
+
+    context = {
+        'chat_rooms': chat_rooms,
+    }
+    return render(request, 'home/my_chats.html', context)

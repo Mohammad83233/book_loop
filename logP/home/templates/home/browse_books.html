@@ -96,6 +96,24 @@
             background-color: #7B68EE; color: white;
         }
 
+        /* ✅ --- STYLE FOR THE EXCHANGE BUTTON --- ✅ */
+        .exchange-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 1rem;
+            background-color: #28a745;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .exchange-btn:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +154,7 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label> </label>
+                <label>&nbsp;</label>
                 <button type="submit">Search</button>
             </div>
         </div>
@@ -161,6 +179,9 @@
                         <p><strong>Condition:</strong> {{ book.condition }}</p>
                         <p><strong>Description:</strong> {{ book.description }}</p>
                         <p><em>Listed by: {{ book.user.username }}</em></p>
+
+                        <!-- ✅ --- ADDED THE EXCHANGE BUTTON LINK --- ✅ -->
+                        <a href="{% url 'start_chat' book.id %}" class="exchange-btn">Start Exchange Chat</a>
                     </div>
                 </div>
             </div>

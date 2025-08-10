@@ -14,6 +14,12 @@ urlpatterns = [
     path('browse/', views.browse_books, name='browse_books'),
     path('book/edit/<int:book_id>/', views.edit_book, name='edit_book'),
     path('book/delete/<int:book_id>/', views.delete_book, name='delete_book'),
+    path('chat/start/<int:book_id>/', views.start_chat, name='start_chat'),
+    path('chat/<int:room_id>/', views.chat_room, name='chat_room'),
+    path('chat/send/<int:room_id>/', views.send_message, name='send_message'),
+
+    # --- ✅ ADD THIS LINE FOR THE "MY CHATS" PAGE ---
+    path('my-chats/', views.my_chats, name='my_chats'),
 
 
     # --- PASSWORD RESET URLS ---
