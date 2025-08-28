@@ -216,7 +216,6 @@ def start_chat(request, book_id):
     )
     return redirect('chat_room', room_id=chat_room.id)
 
-# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def chat_room(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
@@ -226,7 +225,6 @@ def chat_room(request, room_id):
     
     messages_list = ChatMessage.objects.filter(room=chat_room).order_by('timestamp')
     
-    # Mark messages sent by the OTHER user as read
     ChatMessage.objects.filter(room=chat_room).exclude(sender=request.user).update(is_read=True)
     
     context = {
@@ -248,12 +246,12 @@ def send_message(request, room_id):
             )
     return redirect('chat_room', room_id=room_id)
 
-# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def my_chats(request):
     chat_rooms = ChatRoom.objects.filter(
-        Q(buyer=request.user) | Q(seller=request.user)
-    ).order_by('-created_at')
+        Q(buyer=request.user, buyer_deleted=False) | 
+        Q(seller=request.user, seller_deleted=False)
+    ).distinct().order_by('-created_at')
 
     for room in chat_rooms:
         room.unread_count = ChatMessage.objects.filter(
@@ -264,3 +262,44 @@ def my_chats(request):
         'chat_rooms': chat_rooms,
     }
     return render(request, 'home/my_chats.html', context)
+
+@login_required
+def delete_chat(request, room_id):
+    chat_room = get_object_or_404(ChatRoom, id=room_id)
+    
+    if request.user != chat_room.buyer and request.user != chat_room.seller:
+        messages.error(request, "You do not have permission to modify this chat.")
+        return redirect('my_chats')
+
+    if request.method == 'POST':
+        if request.user == chat_room.buyer:
+            chat_room.buyer_deleted = True
+        elif request.user == chat_room.seller:
+            chat_room.seller_deleted = True
+        
+        chat_room.save()
+        
+        if chat_room.buyer_deleted and chat_room.seller_deleted:
+            chat_room.delete()
+
+        messages.success(request, "Conversation has been removed from your view.")
+        return redirect('my_chats')
+
+    return redirect('my_chats')
+
+# --- ✅ ADDED VIEW FOR TOGGLING BOOK STATUS ---
+@login_required
+def toggle_exchange_status(request, book_id):
+    book = get_object_or_404(Book, id=book_id, user=request.user)
+
+    if request.method == 'POST':
+        if book.status == 'Available':
+            book.status = 'Exchanged'
+            messages.success(request, f"'{book.title}' has been marked as Exchanged.")
+        else:
+            book.status = 'Available'
+            messages.success(request, f"'{book.title}' is now available for exchange again.")
+        
+        book.save()
+
+    return redirect('my_listed_books')

@@ -14,12 +14,16 @@ urlpatterns = [
     path('browse/', views.browse_books, name='browse_books'),
     path('book/edit/<int:book_id>/', views.edit_book, name='edit_book'),
     path('book/delete/<int:book_id>/', views.delete_book, name='delete_book'),
+
+    # --- CHAT URLS ---
     path('chat/start/<int:book_id>/', views.start_chat, name='start_chat'),
     path('chat/<int:room_id>/', views.chat_room, name='chat_room'),
     path('chat/send/<int:room_id>/', views.send_message, name='send_message'),
-
-    # --- ✅ ADD THIS LINE FOR THE "MY CHATS" PAGE ---
     path('my-chats/', views.my_chats, name='my_chats'),
+    path('chat/delete/<int:room_id>/', views.delete_chat, name='delete_chat'),
+
+    # --- ✅ ADDED URL FOR TOGGLING BOOK STATUS ---
+    path('book/toggle_status/<int:book_id>/', views.toggle_exchange_status, name='toggle_exchange_status'),
 
 
     # --- PASSWORD RESET URLS ---

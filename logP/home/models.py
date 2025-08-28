@@ -52,6 +52,11 @@ class Book(models.Model):
         ('Fair', 'Fair'),
     ]
 
+    STATUS_CHOICES = [
+        ('Available', 'Available'),
+        ('Exchanged', 'Exchanged'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='books')
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
@@ -60,28 +65,30 @@ class Book(models.Model):
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='book_images/')
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Available')
 
     def __str__(self):
         return self.title
 
-# ChatRoom model to hold chat between buyer and seller for a book
+# --- CHAT MODELS ---
+
 class ChatRoom(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chat_rooms')
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats_as_buyer')
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats_as_seller')
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    buyer_deleted = models.BooleanField(default=False)
+    seller_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.book.title} - Chat ({self.buyer.username} & {self.seller.username})"
 
-# ChatMessage model for storing messages in a chat room
 class ChatMessage(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     message_content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    
-    # --- ✅ ADDED THIS FIELD ---
     is_read = models.BooleanField(default=False)
 
     def __str__(self):

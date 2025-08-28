@@ -6,6 +6,8 @@
     <title>My Chats - BookLoop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- ✅ --- ADD THIS LINE TO LOAD THE ICONS --- ✅ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -42,16 +44,19 @@
             border-radius: 15px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.05);
             margin-bottom: 1.5rem;
-            text-decoration: none;
-            color: inherit;
-            display: flex; /* Changed to flex */
-            justify-content: space-between; /* Pushes items to ends */
-            align-items: center; /* Vertically aligns items */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .chat-list-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+        }
+        .chat-info-link {
+            text-decoration: none;
+            color: inherit;
+            flex-grow: 1;
         }
         .chat-info p {
             margin: 0;
@@ -67,6 +72,11 @@
             font-size: 0.9rem;
             color: #666;
         }
+        .notification-area {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
         .unread-badge {
             background-color: #28a745;
             color: white;
@@ -74,6 +84,21 @@
             font-weight: 600;
             padding: 0.3rem 0.7rem;
             border-radius: 12px;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.1rem; /* Slightly smaller for better balance */
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            line-height: 1; /* Helps with alignment */
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .delete-btn:hover {
+            color: #d9534f;
+            background-color: #ffeded;
         }
         .empty-state {
             text-align: center;
@@ -92,23 +117,33 @@
         
         {% if chat_rooms %}
             {% for room in chat_rooms %}
-                <a href="{% url 'chat_room' room.id %}" class="chat-list-item">
-                    <div class="chat-info">
-                        <p>Chat about: <strong>{{ room.book.title }}</strong></p>
-                        {% if room.buyer == request.user %}
-                            <p class="with-user">With: {{ room.seller.username }}</p>
-                        {% else %}
-                            <p class="with-user">With: {{ room.buyer.username }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- ✅ ADDED NOTIFICATION BADGE LOGIC -->
-                    {% if room.unread_count > 0 %}
-                        <div class="unread-badge">
-                            {{ room.unread_count }} New
+                <div class="chat-list-item">
+                    <a href="{% url 'chat_room' room.id %}" class="chat-info-link">
+                        <div class="chat-info">
+                            <p>Chat about: <strong>{{ room.book.title }}</strong></p>
+                            {% if room.buyer == request.user %}
+                                <p class="with-user">With: {{ room.seller.username }}</p>
+                            {% else %}
+                                <p class="with-user">With: {{ room.buyer.username }}</p>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                </a>
+                    </a>
+                    
+                    <div class="notification-area">
+                        {% if room.unread_count > 0 %}
+                            <div class="unread-badge">
+                                {{ room.unread_count }} New
+                            </div>
+                        {% endif %}
+
+                        <form method="POST" action="{% url 'delete_chat' room.id %}" onsubmit="return confirm('Are you sure you want to remove this chat from your view?');">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-btn" title="Delete Chat">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             {% endfor %}
         {% else %}
             <div class="empty-state">
