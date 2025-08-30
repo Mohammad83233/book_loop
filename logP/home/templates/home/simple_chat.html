@@ -30,6 +30,9 @@
         .chat-header {
             padding: 1.5rem;
             border-bottom: 1px solid #eee;
+            display: flex; /* Use flexbox for alignment */
+            justify-content: space-between;
+            align-items: center;
         }
         .chat-header h2 {
             margin: 0;
@@ -105,17 +108,41 @@
         #send-button:hover {
             background-color: #6a5acd;
         }
+        /* ✅ --- NEW STYLES FOR THE EXCHANGE BUTTON --- ✅ */
+        .exchange-status-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .exchange-status-btn.available { background-color: #28a745; color: white; }
+        .exchange-status-btn.exchanged { background-color: #007bff; color: white; }
     </style>
 </head>
 <body>
 
     <div class="chat-container">
         <div class="chat-header">
-            <h2>{{ room.book.title }}</h2>
-            {% if room.buyer == request.user %}
-                <p>Chat with {{ room.seller.username }}</p>
-            {% else %}
-                <p>Chat with {{ room.buyer.username }}</p>
+            <div>
+                <h2>{{ room.book.title }}</h2>
+                {% if room.buyer == request.user %}
+                    <p>Chat with {{ room.seller.username }}</p>
+                {% else %}
+                    <p>Chat with {{ room.buyer.username }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ✅ --- ADDED THE DYNAMIC EXCHANGE BUTTON --- ✅ -->
+            {% if request.user == room.seller %}
+                <form method="POST" action="{% url 'mark_as_exchanged' room.id %}">
+                    {% csrf_token %}
+                    {% if room.book.status == 'Available' %}
+                        <button type="submit" class="exchange-status-btn available">Mark as Exchanged</button>
+                    {% else %}
+                        <button type="submit" class="exchange-status-btn exchanged">Make Available Again</button>
+                    {% endif %}
+                </form>
             {% endif %}
         </div>
 
@@ -141,7 +168,6 @@
     </div>
 
     <script>
-        // Auto-scroll to the bottom of the chat log
         const chatLog = document.getElementById('chat-log');
         chatLog.scrollTop = chatLog.scrollHeight;
     </script>

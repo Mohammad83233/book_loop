@@ -114,7 +114,6 @@
             background-color: #218838;
         }
         
-        /* ✅ --- NEW STYLE FOR THE EXCHANGED BADGE --- ✅ */
         .exchanged-badge {
             display: block;
             width: 100%;
@@ -194,7 +193,6 @@
                         <p><strong>Description:</strong> {{ book.description }}</p>
                         <p><em>Listed by: {{ book.user.username }}</em></p>
 
-                        <!-- ✅ --- UPDATED DYNAMIC LOGIC --- ✅ -->
                         {% if book.status == 'Available' %}
                             <a href="{% url 'start_chat' book.id %}" class="exchange-btn">Start Exchange Chat</a>
                         {% else %}
@@ -217,7 +215,7 @@
 <script>
     function toggleDetails(button) {
         const bookId = button.dataset.bookid;
-        const detailsDiv = document.getElementById('details-' + bookId);
+        const detailsDiv = document.getElementById('details-'.concat(bookId));
 
         if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
             detailsDiv.style.display = 'block';

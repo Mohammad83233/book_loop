@@ -287,19 +287,38 @@ def delete_chat(request, room_id):
 
     return redirect('my_chats')
 
-# --- ✅ ADDED VIEW FOR TOGGLING BOOK STATUS ---
 @login_required
-def toggle_exchange_status(request, book_id):
-    book = get_object_or_404(Book, id=book_id, user=request.user)
+def mark_as_exchanged(request, room_id):
+    chat_room = get_object_or_404(ChatRoom, id=room_id)
+    book = chat_room.book
 
+    if request.user != book.user:
+        messages.error(request, "You do not have permission to perform this action.")
+        return redirect('chat_room', room_id=room_id)
+    
     if request.method == 'POST':
         if book.status == 'Available':
             book.status = 'Exchanged'
-            messages.success(request, f"'{book.title}' has been marked as Exchanged.")
+            book.exchanged_with = chat_room.buyer
+            messages.success(request, f"'{book.title}' has been marked as Exchanged with {chat_room.buyer.username}.")
         else:
             book.status = 'Available'
+            book.exchanged_with = None
             messages.success(request, f"'{book.title}' is now available for exchange again.")
         
         book.save()
 
-    return redirect('my_listed_books')
+    return redirect('chat_room', room_id=room_id)
+
+# --- ✅ ADDED NEW VIEW FOR EXCHANGED BOOKS HISTORY ---
+@login_required
+def my_exchanged_books(request):
+    exchanged_books = Book.objects.filter(
+        user=request.user,
+        status='Exchanged'
+    ).order_by('-created_at')
+
+    context = {
+        'books': exchanged_books,
+    }
+    return render(request, 'home/my_exchanged_books.html', context)

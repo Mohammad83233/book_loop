@@ -14,16 +14,15 @@ urlpatterns = [
     path('browse/', views.browse_books, name='browse_books'),
     path('book/edit/<int:book_id>/', views.edit_book, name='edit_book'),
     path('book/delete/<int:book_id>/', views.delete_book, name='delete_book'),
-
-    # --- CHAT URLS ---
     path('chat/start/<int:book_id>/', views.start_chat, name='start_chat'),
     path('chat/<int:room_id>/', views.chat_room, name='chat_room'),
     path('chat/send/<int:room_id>/', views.send_message, name='send_message'),
     path('my-chats/', views.my_chats, name='my_chats'),
     path('chat/delete/<int:room_id>/', views.delete_chat, name='delete_chat'),
+    path('chat/mark_exchanged/<int:room_id>/', views.mark_as_exchanged, name='mark_as_exchanged'),
 
-    # --- ✅ ADDED URL FOR TOGGLING BOOK STATUS ---
-    path('book/toggle_status/<int:book_id>/', views.toggle_exchange_status, name='toggle_exchange_status'),
+    # --- ✅ ADDED URL FOR EXCHANGED BOOKS HISTORY ---
+    path('my-exchanged-books/', views.my_exchanged_books, name='my_exchanged_books'),
 
 
     # --- PASSWORD RESET URLS ---

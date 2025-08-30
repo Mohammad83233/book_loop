@@ -66,6 +66,15 @@ class Book(models.Model):
     image = models.ImageField(upload_to='book_images/')
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Available')
+    
+    # --- ✅ ADDED THIS FIELD ---
+    exchanged_with = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='received_books'
+    )
 
     def __str__(self):
         return self.title
