@@ -6,6 +6,10 @@
     <title>Chat for {{ room.book.title }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ✅ LINK TO EXTERNAL CSS ✅ -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -30,7 +34,7 @@
         .chat-header {
             padding: 1.5rem;
             border-bottom: 1px solid #eee;
-            display: flex; /* Use flexbox for alignment */
+            display: flex; 
             justify-content: space-between;
             align-items: center;
         }
@@ -108,7 +112,6 @@
         #send-button:hover {
             background-color: #6a5acd;
         }
-        /* ✅ --- NEW STYLES FOR THE EXCHANGE BUTTON --- ✅ */
         .exchange-status-btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -133,7 +136,6 @@
                 {% endif %}
             </div>
 
-            <!-- ✅ --- ADDED THE DYNAMIC EXCHANGE BUTTON --- ✅ -->
             {% if request.user == room.seller %}
                 <form method="POST" action="{% url 'mark_as_exchanged' room.id %}">
                     {% csrf_token %}
