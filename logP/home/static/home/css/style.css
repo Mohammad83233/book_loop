@@ -1,0 +1,79 @@
+/* ===============================
+   Responsive CSS for BookLoop
+   =============================== */
+
+/* Tablets (up to 1024px) */
+@media (max-width: 1024px) {
+  .container {
+    padding: 15px;
+  }
+
+  .sidebar {
+    width: 200px;
+  }
+
+  .dashboard-content {
+    margin-left: 210px;
+  }
+
+  .book-card {
+    flex: 1 1 45%; /* 2 per row */
+  }
+}
+
+/* Mobile Landscape (up to 768px) */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    width: 220px;
+    transition: 0.3s ease;
+    z-index: 1000;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .dashboard-content {
+    margin-left: 0;
+    padding: 10px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .book-card {
+    flex: 1 1 100%; /* 1 per row */
+  }
+}
+
+/* Mobile Portrait (up to 480px) */
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+
+  h1, h2, h3 {
+    font-size: 1.2rem;
+  }
+
+  .sidebar {
+    width: 180px;
+  }
+
+  .dashboard-content {
+    padding: 8px;
+  }
+
+  .btn {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+
+  .book-card img {
+    height: 180px;
+  }
+}

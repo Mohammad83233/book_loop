@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
-        /* Global Styles */
+        /* ===============================
+           Global Styles
+        =============================== */
         * {
             margin: 0;
             padding: 0;
@@ -18,15 +20,18 @@
 
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #F8F5F2; /* Same background as homepage sections */
+            background-color: #F8F5F2; /* Matches homepage sections */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 20px;
             color: #333;
         }
 
-        /* Login Container */
+        /* ===============================
+           Login Container
+        =============================== */
         .login-container {
             background-color: #fff;
             padding: 3rem;
@@ -53,7 +58,9 @@
             color: #333;
         }
 
-        /* Form Styling */
+        /* ===============================
+           Form Styling
+        =============================== */
         .form-group {
             margin-bottom: 1.5rem;
             text-align: left;
@@ -81,7 +88,9 @@
             box-shadow: 0 0 0 3px rgba(192, 108, 78, 0.2);
         }
 
-        /* Submit Button */
+        /* ===============================
+           Submit Button
+        =============================== */
         input[type="submit"] {
             width: 100%;
             padding: 1rem;
@@ -100,7 +109,9 @@
             transform: translateY(-2px);
         }
 
-        /* Link to Signup/Forgot Password */
+        /* ===============================
+           Links (Forgot + Signup)
+        =============================== */
         .extra-links {
             margin-top: 1.5rem;
             font-size: 0.9rem;
@@ -119,6 +130,7 @@
 
         .signup-link {
             margin-top: 1.5rem;
+            font-size: 0.95rem;
         }
 
         .signup-link a {
@@ -132,6 +144,54 @@
             text-decoration: underline;
         }
 
+        /* ===============================
+           Responsive Design
+        =============================== */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 2rem;
+                max-width: 90%;
+            }
+
+            .login-container h2 {
+                font-size: 1.5rem;
+            }
+
+            .form-group input {
+                padding: 0.7rem;
+                font-size: 0.95rem;
+            }
+
+            input[type="submit"] {
+                padding: 0.8rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+                max-width: 95%;
+            }
+
+            .login-container .logo {
+                font-size: 2rem;
+            }
+
+            .login-container h2 {
+                font-size: 1.3rem;
+            }
+
+            .form-group input {
+                font-size: 0.9rem;
+                padding: 0.6rem;
+            }
+
+            input[type="submit"] {
+                font-size: 0.95rem;
+                padding: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -155,7 +215,6 @@
             <input type="submit" value="Login">
         </form>
 
-        <!-- ✅ FORGOT PASSWORD LINK ADDED HERE -->
         <div class="extra-links">
             <a href="{% url 'password_reset' %}">Forgot password?</a>
         </div>
