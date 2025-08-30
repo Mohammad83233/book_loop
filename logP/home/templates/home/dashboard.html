@@ -144,10 +144,7 @@
             <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
             <li><a href="{% url 'my_chats' %}"><i class="fas fa-comments"></i> My Chats</a></li>
             <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
-
-            <!-- ✅ --- UPDATED THIS LINK --- ✅ -->
             <li><a href="{% url 'my_exchanged_books' %}"><i class="fas fa-exchange-alt"></i> Exchanged Books</a></li>
-
             <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Edit Profile</a></li>
             <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
@@ -175,16 +172,19 @@
                     </div>
                 </a>
 
-                <div class="stats-card">
-                    <div class="card-image-container">
-                        <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1887&auto=format&fit=crop" alt="An open book with text">
+                <!-- ✅ --- UPDATED THIS CARD TO BE A LINK --- ✅ -->
+                <a href="{% url 'my_exchanged_books' %}" class="stats-card-link">
+                    <div class="stats-card">
+                        <div class="card-image-container">
+                            <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1887&auto=format&fit=crop" alt="An open book with text">
+                        </div>
+                        <div class="card-content">
+                            <h2>Exchanged</h2>
+                            <p>{{ exchanged_books_count }}</p>
+                            <span>books</span>
+                        </div>
                     </div>
-                    <div class="card-content">
-                        <h2>Exchanged</h2>
-                        <p>{{ exchanged_books_count }}</p>
-                        <span>books</span>
-                    </div>
-                </div>
+                </a>
 
                 <div class="stats-card">
                     <div class="card-image-container">

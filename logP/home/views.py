@@ -56,6 +56,7 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def dashboard(request):
     user = request.user
@@ -66,7 +67,7 @@ def dashboard(request):
 
     listed_books_count = Book.objects.filter(user=user).count()
     favourite_books_count = 0
-    exchanged_books_count = 0
+    exchanged_books_count = Book.objects.filter(user=user, status='Exchanged').count()
 
     context = {
         'profile': profile,
@@ -310,7 +311,6 @@ def mark_as_exchanged(request, room_id):
 
     return redirect('chat_room', room_id=room_id)
 
-# --- ✅ ADDED NEW VIEW FOR EXCHANGED BOOKS HISTORY ---
 @login_required
 def my_exchanged_books(request):
     exchanged_books = Book.objects.filter(
