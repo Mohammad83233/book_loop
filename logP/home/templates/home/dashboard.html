@@ -17,11 +17,13 @@
             display: flex;
             min-height: 100vh;
         }
+        /* Sidebar */
         .sidebar {
             width: 260px;
             background-color: #ffffff;
             padding: 1.5rem;
             border-right: 1px solid #e0e0e0;
+            transition: transform 0.3s ease-in-out;
         }
         .logo {
             font-size: 2rem;
@@ -47,6 +49,8 @@
             background-color: #7B68EE;
             color: white;
         }
+
+        /* Main Content */
         .main-content {
             flex-grow: 1;
             padding: 2rem;
@@ -58,12 +62,22 @@
             align-items: center;
             margin-bottom: 1rem;
         }
-        .profile-icon {
+        .menu-toggle {
+            display: none;
             font-size: 1.5rem;
+            background: none;
+            border: none;
+            color: #7B68EE;
+            margin-right: auto;
+            cursor: pointer;
+        }
+        .profile-icon {
+            font-size: 1.8rem;
             cursor: pointer;
             color: #7B68EE;
         }
 
+        /* Welcome Section */
         #welcomeSection h1 {
             color: #7B68EE;
             font-size: 2.5rem;
@@ -118,7 +132,8 @@
             font-size: 1rem;
             color: #888;
         }
-        
+
+        /* Profile Section */
         #profileSection { display: none; }
         .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .profile-section { display: flex; flex-wrap: wrap; gap: 2rem; }
@@ -130,12 +145,65 @@
         .genre-tag { background-color: #7B68EE; color: white; padding: 0.3rem 0.7rem; border-radius: 15px; font-size: 0.9rem; }
         .profile-picture { flex: 1; max-width: 250px; }
         .profile-picture img { width: 100%; border-radius: 15px; object-fit: cover; aspect-ratio: 1/1; }
+
+        /* ✅ Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+            }
+            #welcomeSection h1 {
+                font-size: 2rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                height: 100%;
+                z-index: 1000;
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .main-content {
+                padding: 1rem;
+            }
+            .stats-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            #welcomeSection h1 {
+                font-size: 1.8rem;
+                text-align: center;
+            }
+            .profile-section {
+                flex-direction: column;
+                align-items: center;
+            }
+            .profile-info, 
+            .profile-picture {
+                flex: unset;
+                max-width: 100%;
+            }
+            .profile-picture img {
+                max-width: 200px;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="logo">bOOk lOOp</div>
         <ul>
             <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
@@ -152,6 +220,7 @@
 
     <main class="main-content">
         <div class="top-bar">
+            <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
             <i class="fas fa-user-circle profile-icon" onclick="toggleProfile()"></i>
         </div>
 
@@ -172,7 +241,6 @@
                     </div>
                 </a>
 
-                <!-- ✅ --- UPDATED THIS CARD TO BE A LINK --- ✅ -->
                 <a href="{% url 'my_exchanged_books' %}" class="stats-card-link">
                     <div class="stats-card">
                         <div class="card-image-container">
@@ -252,6 +320,9 @@
 </div>
 
 <script>
+    function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("active");
+    }
     function toggleProfile() {
         const profileSection = document.getElementById('profileSection');
         const welcomeSection = document.getElementById('welcomeSection');
