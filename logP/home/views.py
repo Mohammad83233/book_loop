@@ -65,7 +65,7 @@ def dashboard(request):
         profile = None
 
     listed_books_count = Book.objects.filter(user=user).count()
-    favourite_books_count = 0
+    favourite_books_count = user.favorite_books.count()
     exchanged_books_count = Book.objects.filter(user=user, status='Exchanged').count()
 
     context = {
@@ -110,11 +110,11 @@ def list_book(request):
 def my_listed_books(request):
     queryset = Book.objects.filter(user=request.user).order_by('-created_at')
     
-    genres = Genre.objects.all()
-
-    search_query = request.GET.get('q')
-    selected_genre_id = request.GET.get('genre')
-    selected_condition = request.GET.get('condition')
+    # Removed genres = Genre.objects.all() as it's not used in the HTML filter bar
+    
+    search_query = request.GET.get('search') # Changed from 'q' to 'search'
+    status_filter = request.GET.get('status') # Changed from 'genre' to 'status'
+    # selected_condition = request.GET.get('condition') # Removed as not present in the HTML filter bar example
 
     if search_query:
         queryset = queryset.filter(
@@ -122,18 +122,18 @@ def my_listed_books(request):
             Q(author__icontains=search_query)
         ).distinct()
 
-    if selected_genre_id:
-        queryset = queryset.filter(genre__id=selected_genre_id)
+    if status_filter: # Filter by status (Available/Exchanged)
+        queryset = queryset.filter(status=status_filter)
 
-    if selected_condition:
-        queryset = queryset.filter(condition=selected_condition)
+    # if selected_condition: # Removed condition filter as per HTML example
+    #     queryset = queryset.filter(condition=selected_condition)
 
     context = {
         'books': queryset,
-        'genres': genres,
+        # 'genres': genres, # Removed as not used
         'search_query': search_query,
-        'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
-        'selected_condition': selected_condition,
+        'status_filter': status_filter, # Changed from 'selected_genre_id' to 'status_filter'
+        # 'selected_condition': selected_condition, # Removed as not used
     }
     return render(request, 'home/my_listed_books.html', context)
 
@@ -334,9 +334,9 @@ def toggle_favorite(request, book_id):
             book.favorited_by.add(request.user)
             messages.success(request, f"'{book.title}' added to your favorites.")
             
-    return redirect('browse_books')
+    next_page = request.POST.get('next', 'browse_books')
+    return redirect(next_page)
 
-# --- ✅ ADDED NEW VIEW FOR FAVORITE BOOKS LIST ---
 @login_required
 def my_favorite_books(request):
     favorite_books = request.user.favorite_books.all()

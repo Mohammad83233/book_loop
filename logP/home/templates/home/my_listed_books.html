@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>My Listed Books - BookLoop</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
     <style>
         body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
         .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
@@ -153,8 +153,8 @@
             color: #7B68EE;
             margin-top: 0;
             display: flex;
-            align-items: center;
-            gap: 1rem;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         .modal-details p {
             font-size: 1rem;
@@ -177,9 +177,21 @@
             border-radius: 12px;
             font-size: 0.9rem;
             font-weight: 500;
+            margin-left: 1rem;
         }
         .status-badge.available { background-color: #d4edda; color: #155724; }
         .status-badge.exchanged { background-color: #e2e3e5; color: #383d41; }
+        
+        /* ✅ --- NEW FAVORITE BUTTON STYLE --- ✅ */
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+        }
+        .favorite-btn .fas { color: #ff6b6b; }
+        .favorite-btn .far { color: #ccc; }
     </style>
 </head>
 <body>
@@ -194,35 +206,23 @@
 
         <form method="GET" action="{% url 'my_listed_books' %}" id="filter-form">
             <div class="filter-bar">
-                <div class="filter-group" style="grid-column: 1 / -1;">
-                    <label for="search-input">Search by Title / Author</label>
-                    <input type="text" id="search-input" name="q" placeholder="Search your listed books..." value="{{ search_query|default:'' }}">
-                </div>
+                <!-- NEW: Search Input Field -->
                 <div class="filter-group">
-                    <label for="genre-select">Genre</label>
-                    <select name="genre" id="genre-select" onchange="this.form.submit()">
-                        <option value="">All Genres</option>
-                        {% for genre in genres %}
-                            <option value="{{ genre.id }}" {% if genre.id == selected_genre_id %}selected{% endif %}>
-                                {{ genre.name }}
-                            </option>
-                        {% endfor %}
+                    <label for="search">Search by Title or Author</label>
+                    <input type="text" id="search" name="search" placeholder="Enter keywords..." value="{{ request.GET.search }}">
+                </div>
+
+                <!-- Existing Filters (if any) - Add them here if you want other filters alongside search -->
+                <div class="filter-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">Any</option>
+                        <option value="Available" {% if request.GET.status == 'Available' %}selected{% endif %}>Available</option>
+                        <option value="Exchanged" {% if request.GET.status == 'Exchanged' %}selected{% endif %}>Exchanged</option>
                     </select>
                 </div>
-                <div class="filter-group">
-                    <label for="condition-select">Condition</label>
-                    <select name="condition" id="condition-select" onchange="this.form.submit()">
-                        <option value="">All Conditions</option>
-                        <option value="New" {% if selected_condition == 'New' %}selected{% endif %}>New</option>
-                        <option value="Like New" {% if selected_condition == 'Like New' %}selected{% endif %}>Like New</option>
-                        <option value="Good" {% if selected_condition == 'Good' %}selected{% endif %}>Good</option>
-                        <option value="Fair" {% if selected_condition == 'Fair' %}selected{% endif %}>Fair</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>&nbsp;</label>
-                    <button type="submit">Search</button>
-                </div>
+                
+                <button type="submit">Apply Filters</button>
             </div>
         </form>
     
@@ -244,15 +244,7 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px; grid-column: 1 / -1;">
-                {% if search_query or selected_genre_id or selected_condition %}
-                    <h3>No Books Found</h3>
-                    <p>Your search or filter criteria did not match any of your listed books.</p>
-                {% else %}
-                    <h3>You Haven't Listed Any Books Yet</h3>
-                    <p>Click "List Book" in the sidebar to get started!</p>
-                {% endif %}
-            </div>
+            <p style="text-align: center; color: #777;">You haven't listed any books yet.</p>
         {% endif %}
     </div>
 
@@ -270,12 +262,27 @@
             </div>
             <div class="modal-details">
                 <h2>
-                    {{ book.title }}
-                    {% if book.status == 'Available' %}
-                        <span class="status-badge available">Available</span>
-                    {% else %}
-                        <span class="status-badge exchanged">Exchanged with {{ book.exchanged_with.username|default:"N/A" }}</span>
-                    {% endif %}
+                    <span>
+                        {{ book.title }}
+                        {% if book.status == 'Available' %}
+                            <span class="status-badge available">Available</span>
+                        {% else %}
+                            <span class="status-badge exchanged">Exchanged with {{ book.exchanged_with.username|default:"N/A" }}</span>
+                        {% endif %}
+                    </span>
+                    
+                    <!-- ✅ --- FAVORITE BUTTON ADDED --- ✅ -->
+                    <form method="POST" action="{% url 'toggle_favorite' book.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="my_listed_books">
+                        <button type="submit" class="favorite-btn">
+                            {% if request.user in book.favorited_by.all %}
+                                <i class="fas fa-heart"></i>
+                            {% else %}
+                                <i class="far fa-heart"></i>
+                            {% endif %}
+                        </button>
+                    </form>
                 </h2>
                 <p><strong>Author:</strong> {{ book.author }}</p>
                 <p><strong>Genre:</strong> {{ book.genre.name }}</p>
