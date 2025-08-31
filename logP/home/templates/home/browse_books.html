@@ -207,7 +207,15 @@
                 </div>
             </div>
         {% empty %}
-            <!-- ... (your empty state code) ... -->
+                    <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px;">
+                {% if search_query or selected_genre_id or selected_condition %}
+                    <h3>No Books Found</h3>
+                    <p>Your search or filter criteria did not match any books. Try clearing the filters.</p>
+                {% else %}
+                    <h3>No Books Available</h3>
+                    <p>There are currently no books listed by other users. Check back soon!</p>
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
 </div>
