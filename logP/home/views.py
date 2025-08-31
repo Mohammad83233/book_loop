@@ -56,7 +56,6 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
-# --- ✅ MODIFIED THIS VIEW ---
 @login_required
 def dashboard(request):
     user = request.user
@@ -322,3 +321,26 @@ def my_exchanged_books(request):
         'books': exchanged_books,
     }
     return render(request, 'home/my_exchanged_books.html', context)
+
+@login_required
+def toggle_favorite(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    
+    if request.method == 'POST':
+        if book.favorited_by.filter(id=request.user.id).exists():
+            book.favorited_by.remove(request.user)
+            messages.success(request, f"'{book.title}' removed from your favorites.")
+        else:
+            book.favorited_by.add(request.user)
+            messages.success(request, f"'{book.title}' added to your favorites.")
+            
+    return redirect('browse_books')
+
+# --- ✅ ADDED NEW VIEW FOR FAVORITE BOOKS LIST ---
+@login_required
+def my_favorite_books(request):
+    favorite_books = request.user.favorite_books.all()
+    context = {
+        'books': favorite_books
+    }
+    return render(request, 'home/my_favorite_books.html', context)

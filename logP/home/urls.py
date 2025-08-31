@@ -20,9 +20,11 @@ urlpatterns = [
     path('my-chats/', views.my_chats, name='my_chats'),
     path('chat/delete/<int:room_id>/', views.delete_chat, name='delete_chat'),
     path('chat/mark_exchanged/<int:room_id>/', views.mark_as_exchanged, name='mark_as_exchanged'),
-
-    # --- ✅ ADDED URL FOR EXCHANGED BOOKS HISTORY ---
     path('my-exchanged-books/', views.my_exchanged_books, name='my_exchanged_books'),
+    path('book/favorite/<int:book_id>/', views.toggle_favorite, name='toggle_favorite'),
+
+    # --- ✅ ADDED URL FOR FAVORITE BOOKS LIST PAGE ---
+    path('my-favorites/', views.my_favorite_books, name='my_favorite_books'),
 
 
     # --- PASSWORD RESET URLS ---

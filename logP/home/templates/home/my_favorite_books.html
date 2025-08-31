@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Favorite Books - BookLoop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fe; margin: 0; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .page-header h1 { font-size: 2.5rem; font-weight: 700; color: #333; margin: 0; }
+        .back-link { text-decoration: none; color: #7B68EE; font-weight: 500; }
+        
+        .book-list {
+            display: grid;
+            grid-template-columns: 1fr; /* A single column for a list view */
+            gap: 1.5rem;
+        }
+        .book-item {
+            background-color: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
+            padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex; gap: 1.5rem;
+        }
+        .book-item img {
+            height: 150px; width: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .book-item-content { flex-grow: 1; }
+        .book-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .book-header h3 { margin-top: 0; font-size: 1.2rem; }
+        .unfavorite-btn {
+            background: none; border: none; font-size: 1.5rem;
+            color: #ff6b6b; cursor: pointer; padding: 0;
+        }
+        
+        .hidden-details {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+        .details-toggle-btn {
+            background: none; border: 1px solid #7B68EE; color: #7B68EE;
+            padding: 5px 10px; border-radius: 5px; cursor: pointer;
+            margin-top: 1rem; font-size: 0.9rem; transition: background-color 0.3s, color 0.3s;
+        }
+        .details-toggle-btn:hover {
+            background-color: #7B68EE; color: white;
+        }
+        .exchange-btn {
+            display: block; width: 100%; padding: 12px; margin-top: 1rem;
+            background-color: #28a745; color: white; border-radius: 8px;
+            font-size: 1rem; font-weight: 500; text-align: center; text-decoration: none;
+        }
+        .exchanged-badge {
+            display: block; width: 100%; padding: 12px; margin-top: 1rem;
+            background-color: #e2e3e5; color: #383d41; border: 1px solid #ced4da;
+            border-radius: 8px; font-size: 1rem; font-weight: 500; text-align: center;
+        }
+        .empty-state { text-align: center; padding: 3rem; background-color: #fff; border-radius: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>My Favorite Books</h1>
+            <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
+        </div>
+        
+        {% if books %}
+            <div class="book-list">
+                {% for book in books %}
+                    <div class="book-item">
+                        <img src="{{ book.image.url }}" alt="Cover of {{ book.title }}">
+                        <div class="book-item-content">
+                            <div class="book-header">
+                                <h3>{{ book.title }}</h3>
+                                <form method="POST" action="{% url 'toggle_favorite' book.id %}">
+                                    {% csrf_token %}
+                                    <!-- This hidden input tells the view to redirect back to this page -->
+                                    <input type="hidden" name="next" value="my_favorite_books">
+                                    <button type="submit" class="unfavorite-btn" title="Remove from favorites">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <p><strong>Author:</strong> {{ book.author }}</p>
+                            <p><strong>Genre:</strong> {{ book.genre.name }}</p>
+
+                            <button class="details-toggle-btn" data-bookid="{{ book.id }}" onclick="toggleDetails(this)">Show Details</button>
+
+                            <div id="details-{{ book.id }}" class="hidden-details">
+                                <p><strong>Condition:</strong> {{ book.condition }}</p>
+                                <p><strong>Description:</strong> {{ book.description }}</p>
+                                <p><em>Listed by: {{ book.user.username }}</em></p>
+
+                                {% if book.status == 'Available' %}
+                                    <a href="{% url 'start_chat' book.id %}" class="exchange-btn">Start Exchange Chat</a>
+                                {% else %}
+                                    <div class="exchanged-badge">
+                                        Currently Exchanged
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>No Favorite Books Yet</h3>
+                <p>You can add books to your favorites from the "Browse Books" page.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleDetails(button) {
+            const bookId = button.dataset.bookid;
+            const detailsDiv = document.getElementById('details-' + bookId);
+
+            if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                detailsDiv.style.display = 'block';
+                button.textContent = 'Hide Details';
+            } else {
+                detailsDiv.style.display = 'none';
+                button.textContent = 'Show Details';
+            }
+        }
+    </script>
+</body>
+</html>
