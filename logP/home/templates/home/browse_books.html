@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Browse Books - BookLoop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ✅ Responsive Meta -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
     <style>
         body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
@@ -14,6 +15,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .back-link {
             text-decoration: none;
@@ -71,22 +74,32 @@
         }
         
         .book-item {
-            background-color: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
-            padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            display: flex; gap: 1.5rem;
+            background-color: #fff; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px;
+            padding: 1.5rem; 
+            margin-bottom: 1.5rem; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex; 
+            gap: 1.5rem;
+            flex-wrap: wrap;
         }
         .book-item img {
-            height: 150px; width: 100px;
+            height: 150px; 
+            width: 100px;
             object-fit: cover;
             border-radius: 8px;
+            flex-shrink: 0;
         }
-        .book-item-content { flex-grow: 1; }
+        .book-item-content { flex-grow: 1; min-width: 200px; }
         
-        /* ✅ --- NEW STYLES FOR FAVORITE BUTTON --- ✅ */
+        /* ✅ --- FAVORITE BUTTON --- ✅ */
         .book-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .book-header h3 { margin-top: 0; }
         .favorite-btn {
@@ -96,8 +109,8 @@
             cursor: pointer;
             padding: 0;
         }
-        .favorite-btn .fas { color: #ff6b6b; } /* Filled heart for favorited */
-        .favorite-btn .far { color: #ccc; } /* Outline heart for not favorited */
+        .favorite-btn .fas { color: #ff6b6b; }
+        .favorite-btn .far { color: #ccc; }
         
         .hidden-details {
             display: none;
@@ -145,6 +158,28 @@
             font-weight: 500;
             text-align: center;
         }
+
+        /* ✅ Responsive adjustments */
+        @media (max-width: 600px) {
+            .book-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .book-item img {
+                width: 120px;
+                height: auto;
+            }
+            .book-item-content {
+                width: 100%;
+            }
+            .book-header {
+                justify-content: center;
+            }
+            .details-toggle-btn, .exchange-btn, .exchanged-badge {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -158,7 +193,39 @@
     <p style="color: #555; margin-bottom: 2rem;">Here you can find books listed by other members of the community.</p>
 
     <form method="GET" action="{% url 'browse_books' %}" id="filter-form">
-        <!-- ... (your filter bar code) ... -->
+
+        <div class="filter-bar">
+            <div class="filter-group" style="grid-column: 1 / -1;">
+                <label for="search-input">Search by Title / Author</label>
+                <input type="text" id="search-input" name="q" placeholder="e.g., Dune or Frank Herbert" value="{{ search_query|default:'' }}">
+            </div>
+            <div class="filter-group">
+                <label for="genre-select">Genre</label>
+                <select name="genre" id="genre-select" onchange="this.form.submit()">
+                    <option value="">All Genres</option>
+                    {% for genre in genres %}
+                        <option value="{{ genre.id }}" {% if genre.id == selected_genre_id %}selected{% endif %}>
+                            {{ genre.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="condition-select">Condition</label>
+                <select name="condition" id="condition-select" onchange="this.form.submit()">
+                    <option value="">All Conditions</option>
+                    <option value="New" {% if selected_condition == 'New' %}selected{% endif %}>New</option>
+                    <option value="Like New" {% if selected_condition == 'Like New' %}selected{% endif %}>Like New</option>
+                    <option value="Good" {% if selected_condition == 'Good' %}selected{% endif %}>Good</option>
+                    <option value="Fair" {% if selected_condition == 'Fair' %}selected{% endif %}>Fair</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <button type="submit">Search</button>
+            </div>
+        </div>
+        
     </form>
     
     <div class="clear-filters">
@@ -171,16 +238,15 @@
                 <img src="{{ book.image.url }}" alt="Cover of {{ book.title }}">
                 <div class="book-item-content">
                     
-                    <!-- ✅ --- UPDATED HEADER WITH FAVORITE BUTTON --- ✅ -->
                     <div class="book-header">
                         <h3>{{ book.title }}</h3>
                         <form method="POST" action="{% url 'toggle_favorite' book.id %}">
                             {% csrf_token %}
                             <button type="submit" class="favorite-btn">
                                 {% if request.user in book.favorited_by.all %}
-                                    <i class="fas fa-heart"></i> <!-- Solid heart if favorited -->
+                                    <i class="fas fa-heart"></i>
                                 {% else %}
-                                    <i class="far fa-heart"></i> <!-- Outline heart if not -->
+                                    <i class="far fa-heart"></i>
                                 {% endif %}
                             </button>
                         </form>
@@ -207,7 +273,7 @@
                 </div>
             </div>
         {% empty %}
-                    <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px;">
+            <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px;">
                 {% if search_query or selected_genre_id or selected_condition %}
                     <h3>No Books Found</h3>
                     <p>Your search or filter criteria did not match any books. Try clearing the filters.</p>
