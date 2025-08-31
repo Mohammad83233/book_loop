@@ -17,6 +17,8 @@
             padding-bottom: 1rem;
             margin-bottom: 2rem;
             border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .page-header h1 { font-size: 2.5rem; font-weight: 700; color: #333; margin: 0; }
         .back-link { text-decoration: none; color: #7B68EE; font-weight: 500; }
@@ -35,12 +37,14 @@
             height: 150px; width: 100px;
             object-fit: cover;
             border-radius: 8px;
+            flex-shrink: 0;
         }
         .book-item-content { flex-grow: 1; }
         .book-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            gap: 0.5rem;
         }
         .book-header h3 { margin-top: 0; font-size: 1.2rem; }
         .unfavorite-btn {
@@ -73,6 +77,40 @@
             border-radius: 8px; font-size: 1rem; font-weight: 500; text-align: center;
         }
         .empty-state { text-align: center; padding: 3rem; background-color: #fff; border-radius: 15px; }
+
+        /* ✅ Responsive Styles */
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 1.8rem; }
+            .book-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .book-item img {
+                width: 120px;
+                height: auto;
+            }
+            .book-header {
+                flex-direction: column;
+                align-items: center;
+            }
+            .book-header h3 {
+                font-size: 1.1rem;
+            }
+            .details-toggle-btn {
+                width: 100%;
+            }
+            .exchange-btn, .exchanged-badge {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 0.5rem; }
+            .page-header h1 { font-size: 1.5rem; }
+            .book-item { padding: 1rem; }
+            .book-item img { width: 100px; }
+        }
     </style>
 </head>
 <body>
@@ -92,7 +130,6 @@
                                 <h3>{{ book.title }}</h3>
                                 <form method="POST" action="{% url 'toggle_favorite' book.id %}">
                                     {% csrf_token %}
-                                    <!-- This hidden input tells the view to redirect back to this page -->
                                     <input type="hidden" name="next" value="my_favorite_books">
                                     <button type="submit" class="unfavorite-btn" title="Remove from favorites">
                                         <i class="fas fa-heart"></i>
