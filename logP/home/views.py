@@ -1,10 +1,10 @@
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+import requests
 
 from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage
 from .forms import UserProfileForm, BookForm
@@ -95,26 +95,34 @@ def profile_view(request):
 @login_required
 def list_book(request):
     if request.method == 'POST':
+        title = request.POST.get('title')
+        author = request.POST.get('author')
         form = BookForm(request.POST, request.FILES)
+
         if form.is_valid():
             book = form.save(commit=False)
             book.user = request.user
+            book.title = title
+            book.author = author
             book.save()
-            messages.success(request, "✅ Book listed successfully!")
-            return redirect('dashboard')
-    else:
-        form = BookForm()
-    return render(request, 'home/list_book.html', {'form': form})
+            messages.success(request, f"'{title}' has been successfully listed!")
+            return redirect('my_listed_books')
+        else:
+            messages.error(request, "The form details were invalid. Please try again.")
+            return redirect('list_book')
+    
+    context = {'form': BookForm()}
+    return render(request, 'home/list_book.html', context)
 
 @login_required
 def my_listed_books(request):
     queryset = Book.objects.filter(user=request.user).order_by('-created_at')
     
-    # Removed genres = Genre.objects.all() as it's not used in the HTML filter bar
-    
-    search_query = request.GET.get('search') # Changed from 'q' to 'search'
-    status_filter = request.GET.get('status') # Changed from 'genre' to 'status'
-    # selected_condition = request.GET.get('condition') # Removed as not present in the HTML filter bar example
+    genres = Genre.objects.all()
+
+    search_query = request.GET.get('q')
+    selected_genre_id = request.GET.get('genre')
+    selected_condition = request.GET.get('condition')
 
     if search_query:
         queryset = queryset.filter(
@@ -122,18 +130,18 @@ def my_listed_books(request):
             Q(author__icontains=search_query)
         ).distinct()
 
-    if status_filter: # Filter by status (Available/Exchanged)
-        queryset = queryset.filter(status=status_filter)
+    if selected_genre_id:
+        queryset = queryset.filter(genre__id=selected_genre_id)
 
-    # if selected_condition: # Removed condition filter as per HTML example
-    #     queryset = queryset.filter(condition=selected_condition)
+    if selected_condition:
+        queryset = queryset.filter(condition=selected_condition)
 
     context = {
         'books': queryset,
-        # 'genres': genres, # Removed as not used
+        'genres': genres,
         'search_query': search_query,
-        'status_filter': status_filter, # Changed from 'selected_genre_id' to 'status_filter'
-        # 'selected_condition': selected_condition, # Removed as not used
+        'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
+        'selected_condition': selected_condition,
     }
     return render(request, 'home/my_listed_books.html', context)
 

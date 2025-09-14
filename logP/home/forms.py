@@ -10,11 +10,18 @@ class UserProfileForm(forms.ModelForm):
             'gender',
             'profile_pic',
             'interested_genres',
-            'looking_genres'
+            'looking_genres',
+            # --- ✅ ADDED THESE THREE FIELDS ---
+            'location',
+            'latitude',
+            'longitude',
         ]
         widgets = {
             'interested_genres': forms.CheckboxSelectMultiple(),
             'looking_genres': forms.CheckboxSelectMultiple(),
+            # --- ✅ ADDED WIDGETS TO HIDE LAT/LON ---
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
 
 class BookForm(forms.ModelForm):

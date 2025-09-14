@@ -3,91 +3,121 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - BookLoop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    
+    <!-- ✅ LEAFLET.JS CSS & JAVASCRIPT -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
-            background-color: #f4f7fc;
+            background-color: #f8f9fe;
         }
         .dashboard-container {
             display: flex;
             min-height: 100vh;
         }
-        /* Sidebar */
+        
         .sidebar {
-            width: 260px;
+            width: 280px;
             background-color: #ffffff;
-            padding: 1.5rem;
+            padding: 2rem;
             border-right: 1px solid #e0e0e0;
-            transition: transform 0.3s ease-in-out;
+            flex-shrink: 0;
+            position: fixed;
+            left: -280px;
+            top: 0;
+            height: 100%;
+            z-index: 1000;
+            transition: left 0.3s ease;
+        }
+        .sidebar.active {
+            left: 0;
         }
         .logo {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 2.5rem;
+            font-weight: 700;
             color: #7B68EE;
             text-align: center;
+            margin-bottom: 3rem;
+            letter-spacing: -1px;
         }
         .sidebar ul {
             list-style: none;
             padding: 0;
-            margin-top: 2rem;
+            margin: 0;
         }
         .sidebar a {
-            display: block;
-            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1.2rem;
+            margin-bottom: 0.5rem;
             text-decoration: none;
-            color: #333;
-            border-radius: 8px;
-            transition: 0.3s;
+            color: #555;
+            border-radius: 10px;
+            transition: 0.3s ease;
+            font-weight: 600;
         }
-        .sidebar a:hover,
+        .sidebar a:hover {
+            color: #7B68EE;
+        }
         .sidebar a.active {
             background-color: #7B68EE;
             color: white;
+            box-shadow: 0 4px 15px rgba(123, 104, 238, 0.3);
+        }
+        .sidebar a i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
         }
 
-        /* Main Content */
         .main-content {
             flex-grow: 1;
             padding: 2rem;
             overflow-y: auto;
+            width: 100%;
         }
+        
         .top-bar {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         .menu-toggle {
-            display: none;
             font-size: 1.5rem;
-            background: none;
-            border: none;
             color: #7B68EE;
-            margin-right: auto;
             cursor: pointer;
+            display: block;
         }
         .profile-icon {
-            font-size: 1.8rem;
             cursor: pointer;
-            color: #7B68EE;
+        }
+        .profile-icon img {
+            height: 36px;
+            width: 36px;
         }
 
-        /* Welcome Section */
-        #welcomeSection h1 {
-            color: #7B68EE;
-            font-size: 2.5rem;
+        .welcome-header h1 {
+            font-size: 2rem;
             font-weight: 700;
+            color: #7B68EE;
             margin-bottom: 2rem;
         }
+        
         .stats-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            grid-template-columns: 1fr;
+            max-width: 100%;
+            gap: 1.5rem;
         }
         a.stats-card-link {
             text-decoration: none;
@@ -95,16 +125,16 @@
         .stats-card {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.07);
             transition: transform 0.3s, box-shadow 0.3s;
             overflow: hidden;
         }
         .stats-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.1);
         }
         .card-image-container {
-            height: 160px;
+            height: 180px;
         }
         .card-image-container img {
             width: 100%;
@@ -121,81 +151,116 @@
             color: #333;
             margin: 0 0 0.5rem 0;
         }
-        .card-content p {
+        .card-content .count {
             font-size: 2.5rem;
             font-weight: 700;
             color: #7B68EE;
             margin: 0;
             line-height: 1;
         }
-        .card-content span {
+        .card-content .subtext {
             font-size: 1rem;
             color: #888;
         }
 
-        /* Profile Section */
-        #profileSection { display: none; }
-        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .profile-section { display: flex; flex-wrap: wrap; gap: 2rem; }
-        .profile-info { flex: 2; }
-        .profile-group { margin-bottom: 1rem; }
-        .profile-group label { font-weight: 600; display: block; margin-bottom: 0.3rem; }
-        .profile-group .value { background: #f0f0f0; padding: 10px; border-radius: 8px; }
-        .genre-box { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.8rem 0; }
-        .genre-tag { background-color: #7B68EE; color: white; padding: 0.3rem 0.7rem; border-radius: 15px; font-size: 0.9rem; }
-        .profile-picture { flex: 1; max-width: 250px; }
-        .profile-picture img { width: 100%; border-radius: 15px; object-fit: cover; aspect-ratio: 1/1; }
-
-        /* ✅ Responsive */
-        @media (max-width: 1024px) {
-            .sidebar {
-                width: 220px;
-            }
-            #welcomeSection h1 {
-                font-size: 2rem;
-            }
+        #profileSection {
+            display: none;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.07);
         }
-        @media (max-width: 768px) {
-            .dashboard-container {
-                flex-direction: column;
-            }
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+        }
+        .profile-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .profile-group label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.3rem;
+            color: #333;
+        }
+        .profile-group .value {
+            background: #f8f9fe;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: #555;
+        }
+        .genre-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-top: 0.25rem;
+        }
+        .genre-tag {
+            background-color: #7B68EE;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+        .profile-picture-container {
+            text-align: center;
+        }
+        .profile-picture-container label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .profile-picture-container img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        #profile-map {
+            height: 250px;
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 1rem;
+            z-index: 0;
+        }
+
+        @media (min-width: 992px) {
             .sidebar {
-                position: fixed;
-                top: 0;
+                position: static;
                 left: 0;
-                bottom: 0;
-                height: 100%;
-                z-index: 1000;
-                transform: translateX(-100%);
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .menu-toggle {
-                display: block;
             }
             .main-content {
-                padding: 1rem;
+                margin-left: 0;
+                width: auto;
+                padding: 2rem 3rem;
+            }
+            .menu-toggle {
+                display: none;
+            }
+            .top-bar {
+                display: block;
+                text-align: right;
+                margin-bottom: 0;
+            }
+            .welcome-header {
+                margin-top: 1.5rem;
+            }
+            .welcome-header h1 {
+                font-size: 2.5rem;
             }
             .stats-cards {
-                grid-template-columns: 1fr;
-                gap: 1rem;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                max-width: none;
             }
-            #welcomeSection h1 {
-                font-size: 1.8rem;
-                text-align: center;
-            }
-            .profile-section {
-                flex-direction: column;
-                align-items: center;
-            }
-            .profile-info, 
-            .profile-picture {
-                flex: unset;
-                max-width: 100%;
-            }
-            .profile-picture img {
-                max-width: 200px;
+            .profile-grid {
+                grid-template-columns: 2fr 1fr;
             }
         }
     </style>
@@ -204,14 +269,14 @@
 
 <div class="dashboard-container">
     <aside class="sidebar" id="sidebar">
-        <div class="logo">bOOk lOOp</div>
+        <div class="logo">book loop</div>
         <ul>
             <li><a href="{% url 'dashboard' %}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="{% url 'browse_books' %}"><i class="fas fa-search"></i> Browse Books</a></li>
-            <li><a href="{% url 'list_book' %}"><i class="fas fa-plus-square"></i> List Book</a></li>
-            <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list-ul"></i> My Listed Books</a></li>
+            <li><a href="{% url 'list_book' %}"><i class="fas fa-plus"></i> List Book</a></li>
+            <li><a href="{% url 'my_listed_books' %}"><i class="fas fa-list"></i> My Listed Books</a></li>
             <li><a href="{% url 'my_chats' %}"><i class="fas fa-comments"></i> My Chats</a></li>
-            <li><a href="{% url 'my_favorite_books' %}"><i class="fas fa-heart"></i> Favourite Books</a></li>
+            <li><a href="#"><i class="fas fa-heart"></i> Favourite Books</a></li>
             <li><a href="{% url 'my_exchanged_books' %}"><i class="fas fa-exchange-alt"></i> Exchanged Books</a></li>
             <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Edit Profile</a></li>
             <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -220,14 +285,19 @@
 
     <main class="main-content">
         <div class="top-bar">
-            <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-            <i class="fas fa-user-circle profile-icon" onclick="toggleProfile()"></i>
+            <div class="menu-toggle" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="profile-icon" onclick="toggleProfile()">
+                <img src="https://api.iconify.design/iconamoon/profile-circle-fill.svg?color=%237b68ee" alt="Profile">
+            </div>
         </div>
 
         <div id="welcomeSection">
-            <h1>Welcome, {{ request.user.username }} 👋</h1>
+            <div class="welcome-header">
+                <h1>Welcome, {{ request.user.username }} 👋</h1>
+            </div>
             <div class="stats-cards">
-
                 <a href="{% url 'list_book' %}" class="stats-card-link">
                     <div class="stats-card">
                         <div class="card-image-container">
@@ -235,12 +305,11 @@
                         </div>
                         <div class="card-content">
                             <h2>List a Book</h2>
-                            <p>{{ listed_books_count }}</p>
-                            <span>books listed</span>
+                            <p class="count">{{ listed_books_count }}</p>
+                            <span class="subtext">books listed</span>
                         </div>
                     </div>
                 </a>
-
                 <a href="{% url 'my_exchanged_books' %}" class="stats-card-link">
                     <div class="stats-card">
                         <div class="card-image-container">
@@ -248,93 +317,137 @@
                         </div>
                         <div class="card-content">
                             <h2>Exchanged</h2>
-                            <p>{{ exchanged_books_count }}</p>
-                            <span>books</span>
+                            <p class="count">{{ exchanged_books_count }}</p>
+                            <span class="subtext">books</span>
                         </div>
                     </div>
                 </a>
-
-                <a href="{% url 'my_favorite_books' %}" class="stats-card-link">
                 <div class="stats-card">
                     <div class="card-image-container">
                         <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format&fit=crop" alt="A person reading a book in a cozy setting">
                     </div>
                     <div class="card-content">
                         <h2>Favourites</h2>
-                        <p>{{ favourite_books_count }}</p>
-                        <span>books</span>
+                        <p class="count">{{ favourite_books_count }}</p>
+                        <span class="subtext">books</span>
                     </div>
                 </div>
-                </a>
-
             </div>
         </div>
 
-        <div id="profileSection" class="card profile-section">
-            <div class="profile-info">
-                <div class="profile-group">
-                    <label>Full Name</label>
-                    <div class="value">{{ profile.first_name }} {{ profile.last_name }}</div>
-                </div>
-                <div class="profile-group">
-                    <label>Username</label>
-                    <div class="value">{{ request.user.username }}</div>
-                </div>
-                <div class="profile-group">
-                    <label>Email</label>
-                    <div class="value">{{ request.user.email }}</div>
-                </div>
-                <div class="profile-group">
-                    <label>Gender</label>
-                    <div class="value">{{ profile.gender }}</div>
-                </div>
-                <div class="profile-group">
-                    <label>Interested Genres</label>
-                    <div class="genre-box">
-                        {% for genre in profile.interested_genres.all %}
-                            <span class="genre-tag">{{ genre.name }}</span>
-                        {% empty %}
-                            <span class="genre-tag">None</span>
-                        {% endfor %}
+        <div id="profileSection" data-latitude="{{ profile.latitude|default:'null' }}" data-longitude="{{ profile.longitude|default:'null' }}">
+            <div class="profile-grid">
+                <div class="profile-details">
+                    <div class="profile-group">
+                        <label>Full Name</label>
+                        <div class="value">{{ profile.first_name }} {{ profile.last_name }}</div>
+                    </div>
+                    <div class="profile-group">
+                        <label>Username</label>
+                        <div class="value">{{ request.user.username }}</div>
+                    </div>
+                    <div class="profile-group">
+                        <label>Email</label>
+                        <div class="value">{{ request.user.email }}</div>
+                    </div>
+                    <div class="profile-group">
+                        <label>Gender</label>
+                        <div class="value">{{ profile.gender|default:"Not specified" }}</div>
+                    </div>
+                    
+                    {% if profile.latitude and profile.longitude %}
+                    <div class="profile-group">
+                        <label>My Location</label>
+                        <div class="value">{{ profile.location }}</div>
+                        <div id="profile-map"></div>
+                    </div>
+                    {% endif %}
+
+                    <div class="profile-group">
+                        <label>Interested Genres</label>
+                        <div class="genre-box">
+                            {% for genre in profile.interested_genres.all %}
+                                <span class="genre-tag">{{ genre.name }}</span>
+                            {% empty %}
+                                <span class="genre-tag" style="background-color: #ccc;">None</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="profile-group">
+                        <label>Looking For Genres</label>
+                        <div class="genre-box">
+                            {% for genre in profile.looking_genres.all %}
+                                <span class="genre-tag">{{ genre.name }}</span>
+                            {% empty %}
+                                <span class="genre-tag" style="background-color: #ccc;">None</span>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
-                <div class="profile-group">
-                    <label>Looking For Genres</label>
-                    <div class="genre-box">
-                        {% for genre in profile.looking_genres.all %}
-                            <span class="genre-tag">{{ genre.name }}</span>
-                        {% empty %}
-                            <span class="genre-tag">None</span>
-                        {% endfor %}
-                    </div>
+                <div class="profile-picture-container">
+                    <label>Profile Picture</label>
+                    {% if profile.profile_pic %}
+                        <img src="{{ profile.profile_pic.url }}" alt="Profile Picture">
+                    {% else %}
+                        <img src="https://api.iconify.design/carbon/user-avatar-filled.svg?color=%23cccccc" alt="Default Avatar">
+                    {% endif %}
                 </div>
-            </div>
-            <div class="profile-picture">
-                <label>Profile Picture</label>
-                {% if profile.profile_pic %}
-                    <img src="{{ profile.profile_pic.url }}" alt="Profile Picture">
-                {% else %}
-                    <p>No image uploaded</p>
-                {% endif %}
             </div>
         </div>
     </main>
 </div>
 
 <script>
-    function toggleSidebar() {
-        document.getElementById("sidebar").classList.toggle("active");
-    }
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+    });
+
+    let profileMapInitialized = false;
+
     function toggleProfile() {
         const profileSection = document.getElementById('profileSection');
         const welcomeSection = document.getElementById('welcomeSection');
         
         if (profileSection.style.display === "none" || profileSection.style.display === "") {
-            profileSection.style.display = "flex";
+            profileSection.style.display = "block";
             welcomeSection.style.display = "none";
+            if (!profileMapInitialized) {
+                initProfileMap();
+                profileMapInitialized = true;
+            }
         } else {
             profileSection.style.display = "none";
             welcomeSection.style.display = "block";
+        }
+    }
+
+    function initProfileMap() {
+        const profileSection = document.getElementById("profileSection");
+        const mapElement = document.getElementById("profile-map");
+
+        const profileLat = parseFloat(profileSection.dataset.latitude);
+        const profileLng = parseFloat(profileSection.dataset.longitude);
+        
+        if (!isNaN(profileLat) && !isNaN(profileLng) && mapElement) {
+            const userLocation = [profileLat, profileLng];
+            const map = L.map('profile-map', {
+                center: userLocation,
+                zoom: 12,
+                dragging: false,
+                touchZoom: false,
+                doubleClickZoom: false,
+                scrollWheelZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                zoomControl: false
+            });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker(userLocation).addTo(map);
         }
     }
 </script>

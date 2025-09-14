@@ -39,6 +39,11 @@ class UserProfile(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # --- ✅ ADDED THESE FIELDS ---
+    location = models.CharField(max_length=255, blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     def __str__(self):
         return self.user.username
@@ -60,6 +65,7 @@ class Book(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='books')
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
+    
     genre = models.ForeignKey(Genre, on_delete=models.SET_NULL, null=True)
     condition = models.CharField(max_length=10, choices=CONDITION_CHOICES)
     description = models.TextField(blank=True)
@@ -74,8 +80,6 @@ class Book(models.Model):
         blank=True,
         related_name='received_books'
     )
-
-    # --- ✅ ADDED THIS FIELD ---
     favorited_by = models.ManyToManyField(User, related_name='favorite_books', blank=True)
 
     def __str__(self):
