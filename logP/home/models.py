@@ -40,10 +40,11 @@ class UserProfile(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     
-    # --- ✅ ADDED THESE FIELDS ---
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+    
+    friends = models.ManyToManyField(User, blank=True, related_name='friends')
 
     def __str__(self):
         return self.user.username
@@ -85,8 +86,7 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
-# --- CHAT MODELS ---
-
+# Chat Models
 class ChatRoom(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chat_rooms')
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats_as_buyer')
@@ -108,3 +108,12 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.sender.username}: {self.message_content[:30]}"
+
+# Friend Request Model
+class FriendRequest(models.Model):
+    from_user = models.ForeignKey(User, related_name='from_user', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(User, related_name='to_user', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.from_user.username} to {self.to_user.username}"

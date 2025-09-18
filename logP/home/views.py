@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 import requests
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest
 from .forms import UserProfileForm, BookForm
 
 
@@ -352,3 +352,126 @@ def my_favorite_books(request):
         'books': favorite_books
     }
     return render(request, 'home/my_favorite_books.html', context)
+
+# --- ✅ MODIFIED THIS VIEW ---
+@login_required
+def public_profile_view(request, username):
+    profile_user = get_object_or_404(User, username=username)
+    profile = get_object_or_404(UserProfile, user=profile_user)
+
+    # Correctly get the logged-in user's profile
+    logged_in_user_profile = request.user.userprofile
+    are_friends = logged_in_user_profile.friends.filter(id=profile_user.id).exists()
+    
+    request_sent = FriendRequest.objects.filter(from_user=request.user, to_user=profile_user).exists()
+    request_received = FriendRequest.objects.filter(from_user=profile_user, to_user=request.user).exists()
+
+    context = {
+        'profile': profile,
+        'are_friends': are_friends,
+        'request_sent': request_sent,
+        'request_received': request_received,
+    }
+    return render(request, 'home/public_profile.html', context)
+
+@login_required
+def send_friend_request(request, username):
+    to_user = get_object_or_404(User, username=username)
+    
+    if request.method == 'POST':
+        if to_user == request.user:
+            messages.error(request, "You cannot send a friend request to yourself.")
+            return redirect('public_profile', username=username)
+            
+        if not FriendRequest.objects.filter(from_user=request.user, to_user=to_user).exists():
+            FriendRequest.objects.create(from_user=request.user, to_user=to_user)
+            messages.success(request, f"Your friend request to {username} has been sent.")
+        else:
+            messages.warning(request, "You have already sent a friend request to this user.")
+            
+    return redirect('public_profile', username=username)
+
+@login_required
+def my_friend_requests(request):
+    friend_requests = FriendRequest.objects.filter(to_user=request.user)
+
+    context = {
+        'friend_requests': friend_requests
+    }
+    return render(request, 'home/my_friend_requests.html', context)
+
+@login_required
+def accept_friend_request(request, request_id):
+    friend_request = get_object_or_404(FriendRequest, id=request_id)
+
+    if friend_request.to_user == request.user:
+        # Correctly add to the User's friends list, not the profile's
+        friend_request.from_user.userprofile.friends.add(request.user)
+        request.user.userprofile.friends.add(friend_request.from_user)
+
+        friend_request.delete()
+        
+        messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
+    else:
+        messages.error(request, "You cannot respond to this friend request.")
+    
+    return redirect('my_friend_requests')
+
+@login_required
+def decline_friend_request(request, request_id):
+    friend_request = get_object_or_404(FriendRequest, id=request_id)
+
+    if friend_request.to_user == request.user:
+        friend_request.delete()
+        messages.info(request, f"You have declined the friend request from {friend_request.from_user.username}.")
+    else:
+        messages.error(request, "You cannot respond to this friend request.")
+
+    return redirect('my_friend_requests')
+# home/views.py
+
+# home/views.py
+
+# home/views.py
+
+# home/views.py
+
+@login_required
+def friend_map_view(request):
+    current_user_profile = get_object_or_404(UserProfile, user=request.user)
+    friends = current_user_profile.friends.all()
+    friend_ids = [friend.id for friend in friends]
+
+    stranger_profiles = UserProfile.objects.exclude(
+        Q(user=request.user) | Q(user__id__in=friend_ids)
+    ).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+    
+    users_data = []
+
+    for friend_user in friends:
+        friend_profile = get_object_or_404(UserProfile, user=friend_user)
+        if friend_profile.latitude and friend_profile.longitude:
+            users_data.append({
+                'username': friend_profile.user.username,
+                'lat': friend_profile.latitude,
+                'lng': friend_profile.longitude,
+                'is_friend': True,
+                'location': friend_profile.location,
+            })
+    
+    for other_profile in stranger_profiles:
+        users_data.append({
+            'username': other_profile.user.username,
+            'lat': other_profile.latitude,
+            'lng': other_profile.longitude,
+            'is_friend': False,
+            'location': other_profile.location,
+        })
+
+   
+    context = {
+        'current_user_lat': current_user_profile.latitude,
+        'current_user_lng': current_user_profile.longitude,
+        'users_data': users_data,
+    }
+    return render(request, 'home/friend_map.html', context)

@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Friend Requests - BookLoop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fe;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        .back-link {
+            text-decoration: none;
+            color: #7B68EE;
+            font-weight: 500;
+        }
+        .request-item {
+            background-color: #fff;
+            padding: 1.5rem 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .request-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .request-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .request-info p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .request-info strong {
+            color: #7B68EE;
+            font-weight: 600;
+        }
+        .request-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        .action-btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+        .btn-accept {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-decline {
+            background-color: #dc3545;
+            color: white;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background-color: #fff;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>Friend Requests</h1>
+            <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
+        </div>
+        
+        {% if friend_requests %}
+            {% for req in friend_requests %}
+                <div class="request-item">
+                    <div class="request-info">
+                        {% if req.from_user.userprofile.profile_pic %}
+                            <img src="{{ req.from_user.userprofile.profile_pic.url }}" alt="{{ req.from_user.username }}">
+                        {% else %}
+                            <img src="https://api.iconify.design/carbon/user-avatar-filled.svg?color=%23cccccc" alt="Default Avatar">
+                        {% endif %}
+                        <p>
+                            <a href="{% url 'public_profile' req.from_user.username %}" style="text-decoration: none;">
+                                <strong>{{ req.from_user.username }}</strong>
+                            </a>
+                            sent you a friend request.
+                        </p>
+                    </div>
+                    
+                    <div class="request-actions">
+                        <form method="POST" action="{% url 'accept_friend_request' req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="action-btn btn-accept">Accept</button>
+                        </form>
+                        <form method="POST" action="{% url 'decline_friend_request' req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="action-btn btn-decline">Decline</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <h3>No New Friend Requests</h3>
+                <p>You're all caught up!</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

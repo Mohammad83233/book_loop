@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BookLoop Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; }
+        #map { height: 100vh; width: 100vw; }
+        .map-popup h3 { margin: 0 0 5px 0; font-size: 1.2rem; }
+        .map-popup p { margin: 0 0 10px 0; color: #555; }
+        .map-popup a { color: #7B68EE; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    {{ users_data|json_script:"users-data" }}
+    {{ current_user_lat|json_script:"current-user-lat" }}
+    {{ current_user_lng|json_script:"current-user-lng" }}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // ✅ --- THIS LINE WAS MISSING --- ✅
+            const usersData = JSON.parse(document.getElementById('users-data').textContent);
+            
+            const currentUserLat = JSON.parse(document.getElementById('current-user-lat').textContent);
+            const currentUserLng = JSON.parse(document.getElementById('current-user-lng').textContent);
+            const mapCenter = (currentUserLat && currentUserLng) ? [currentUserLat, currentUserLng] : [20.59, 78.96];
+            const map = L.map('map').setView(mapCenter, 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const friendIcon = L.icon({ iconUrl: 'https://api.iconify.design/material-symbols/book.svg?color=%237b68ee', iconSize: [40, 40] });
+            const strangerIcon = L.icon({ iconUrl: 'https://api.iconify.design/material-symbols/book.svg?color=%23888888', iconSize: [40, 40] });
+            
+            if (currentUserLat && currentUserLng) {
+                L.marker([currentUserLat, currentUserLng]).addTo(map).bindPopup("<b>You are here!</b>");
+            }
+
+            usersData.forEach(user => {
+                let iconToUse = user.is_friend ? friendIcon : strangerIcon;
+                
+                let popupContent;
+                if (user.is_friend) {
+                    popupContent = `
+                        <div class="map-popup">
+                            <h3>${user.username} (Friend)</h3>
+                            <p>${user.location || ''}</p>
+                            <a href="{% url 'browse_books' %}">Browse All Books</a>
+                        </div>
+                    `;
+                } else {
+                    popupContent = `
+                        <div class="map-popup">
+                            <h3>${user.username}</h3>
+                            <p>${user.location || ''}</p>
+                            <a href="/user/${user.username}/">View Profile & Add Friend</a>
+                        </div>
+                    `;
+                }
+
+                L.marker([user.lat, user.lng], {icon: iconToUse}).addTo(map).bindPopup(popupContent);
+            });
+        });
+    </script>
+</body>
+</html>

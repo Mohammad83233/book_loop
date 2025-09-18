@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ profile.user.username }}'s Profile - BookLoop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fe;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.07);
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-header img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .profile-header-info h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .profile-header-info p {
+            margin: 0;
+            color: #666;
+        }
+        
+        .friend-button {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-add { background-color: #28a745; }
+        .btn-pending { background-color: #ffc107; color: #333; cursor: not-allowed; }
+        .btn-friends { background-color: #17a2b8; }
+        .btn-respond { background-color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            {% if profile.profile_pic %}
+                <img src="{{ profile.profile_pic.url }}" alt="{{ profile.user.username }}'s profile picture">
+            {% else %}
+                <img src="https://api.iconify.design/carbon/user-avatar-filled.svg?color=%23cccccc" alt="Default Avatar">
+            {% endif %}
+
+            <div class="profile-header-info">
+                <h1>{{ profile.user.username }}</h1>
+                <p>{{ profile.first_name }} {{ profile.last_name }}</p>
+
+                <!-- ✅ --- DYNAMIC FRIENDSHIP BUTTON --- ✅ -->
+                {% if profile.user != request.user %}
+                    <div>
+                        {% if are_friends %}
+                            <span class="friend-button btn-friends"><i class="fas fa-check"></i> Friends</span>
+                        {% elif request_sent %}
+                            <button class="friend-button btn-pending" disabled>Request Sent</button>
+                        {% elif request_received %}
+                            <a href="{% url 'my_friend_requests' %}" class="friend-button btn-respond">Respond to Request</a>
+                        {% else %}
+                            <form method="POST" action="{% url 'send_friend_request' profile.user.username %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="friend-button btn-add">Add Friend</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- You can add other sections here, like the user's book list -->
+        <h3>{{ profile.user.username }}'s Available Books:</h3>
+        <p><em>(Book list will be displayed here in a future step)</em></p>
+
+        <p style="margin-top: 2rem;"><a href="{% url 'browse_books' %}">← Back to Browse</a></p>
+    </div>
+</body>
+</html>
