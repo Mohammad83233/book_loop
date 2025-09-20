@@ -235,9 +235,21 @@
                 <div class="book-item-content">
                     
                     <div class="book-header">
-                        <h3>{{ book.title }}</h3>
+                        <div>
+                            <h3>{{ book.title }}</h3>
+                            <div class="rating-display" style="margin-bottom: 0.5rem; color: #555;">
+                                {% if book.average_rating is not None %}
+                                    <i class="fas fa-star" style="color: #ffc107;"></i>
+                                    <strong>{{ book.average_rating|floatformat:1 }}</strong> 
+                                    <span style="font-size: 0.9rem;">({{ book.review_count }} review{{ book.review_count|pluralize }})</span>
+                                {% else %}
+                                    <span style="font-size: 0.9rem;">No ratings yet</span>
+                                {% endif %}
+                            </div>
+                        </div>
                         <form method="POST" action="{% url 'toggle_favorite' book.id %}">
                             {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
                             <button type="submit" class="favorite-btn">
                                 {% if request.user in book.favorited_by.all %}
                                     <i class="fas fa-heart"></i>
@@ -278,7 +290,7 @@
             <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px;">
                 {% if search_query or selected_genre_id or selected_condition %}
                     <h3>No Books Found</h3>
-                    <p>Your search or filter criteria did not match any books. Try clearing the filters.</p>
+                    <p>Your search or filter criteria did not match any of your listed books.</p>
                 {% else %}
                     <h3>No Books Available</h3>
                     <p>There are currently no books listed by other users. Check back soon!</p>

@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Exchange History - BookLoop</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        .page-header h1 { font-size: 2.5rem; font-weight: 700; color: #333; margin: 0; }
+        .back-link { text-decoration: none; color: #7B68EE; font-weight: 500; }
+        .history-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        .history-section h2 { margin-top: 0; }
+        .book-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .book-item:last-child { border-bottom: none; }
+        .review-btn {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .reviewed-text { color: #28a745; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>My Exchange History</h1>
+            <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
+        </div>
+        
+        <!-- Books I've Given Section -->
+        <div class="history-section">
+            <h2>Books I've Given</h2>
+            {% for book in given_books %}
+                <div class="book-item">
+                    <div>
+                        <p><strong>{{ book.title }}</strong> exchanged with {{ book.exchanged_with.username }}</p>
+                    </div>
+                    <div>
+                        {% if not book.has_been_reviewed_by_seller %}
+                            <a href="{% url 'leave_review' book.id %}?type=seller_review" class="review-btn">Review Buyer</a>
+                        {% else %}
+                            <span class="reviewed-text">✔ Review Submitted</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>You have not given any books in an exchange yet.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Books I've Received Section -->
+        <div class="history-section">
+            <h2>Books I've Received</h2>
+            {% for book in received_books %}
+                <div class="book-item">
+                    <div>
+                        <p><strong>{{ book.title }}</strong> received from {{ book.user.username }}</p>
+                    </div>
+                    <div>
+                        {% if not book.has_been_reviewed_by_buyer %}
+                            <a href="{% url 'leave_review' book.id %}?type=buyer_review" class="review-btn">Review Book & Seller</a>
+                        {% else %}
+                            <span class="reviewed-text">✔ Review Submitted</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>You have not received any books in an exchange yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

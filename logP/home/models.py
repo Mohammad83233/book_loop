@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Avg
 
 # Genre model to hold available genres
 class Genre(models.Model):
@@ -86,7 +87,8 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
-# Chat Models
+# --- CHAT MODELS ---
+
 class ChatRoom(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chat_rooms')
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats_as_buyer')
@@ -117,3 +119,24 @@ class FriendRequest(models.Model):
 
     def __str__(self):
         return f"From {self.from_user.username} to {self.to_user.username}"
+    
+# Review Model
+class Review(models.Model):
+    REVIEW_TYPE_CHOICES = [
+        ('buyer_review', 'Review by Buyer'),
+        ('seller_review', 'Review by Seller'),
+    ]
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='reviews')
+    reviewed_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_received')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_written')
+    
+    review_type = models.CharField(max_length=15, choices=REVIEW_TYPE_CHOICES)
+    book_rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
+    exchange_rating = models.IntegerField(choices=RATING_CHOICES)
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.review_type} for '{self.book.title}' by {self.reviewer.username}"

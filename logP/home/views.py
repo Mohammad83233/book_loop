@@ -3,11 +3,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Avg, Count
 import requests
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest
-from .forms import UserProfileForm, BookForm
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review
+from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm
 
 
 def index(request):
@@ -67,12 +67,14 @@ def dashboard(request):
     listed_books_count = Book.objects.filter(user=user).count()
     favourite_books_count = user.favorite_books.count()
     exchanged_books_count = Book.objects.filter(user=user, status='Exchanged').count()
+    friend_request_count = FriendRequest.objects.filter(to_user=user).count()
 
     context = {
         'profile': profile,
         'listed_books_count': listed_books_count,
         'favourite_books_count': favourite_books_count,
         'exchanged_books_count': exchanged_books_count,
+        'friend_request_count': friend_request_count,
         'user': user,
     }
     return render(request, 'home/dashboard.html', context)
@@ -95,29 +97,22 @@ def profile_view(request):
 @login_required
 def list_book(request):
     if request.method == 'POST':
-        title = request.POST.get('title')
-        author = request.POST.get('author')
         form = BookForm(request.POST, request.FILES)
-
         if form.is_valid():
             book = form.save(commit=False)
             book.user = request.user
-            book.title = title
-            book.author = author
             book.save()
-            messages.success(request, f"'{title}' has been successfully listed!")
+            messages.success(request, f"'{book.title}' has been successfully listed!")
             return redirect('my_listed_books')
         else:
             messages.error(request, "The form details were invalid. Please try again.")
-            return redirect('list_book')
     
-    context = {'form': BookForm()}
-    return render(request, 'home/list_book.html', context)
+    form = BookForm()
+    return render(request, 'home/list_book.html', {'form': form})
 
 @login_required
 def my_listed_books(request):
     queryset = Book.objects.filter(user=request.user).order_by('-created_at')
-    
     genres = Genre.objects.all()
 
     search_query = request.GET.get('q')
@@ -147,7 +142,11 @@ def my_listed_books(request):
 
 @login_required
 def browse_books(request):
-    queryset = Book.objects.exclude(user=request.user).order_by('-created_at')
+    queryset = Book.objects.exclude(user=request.user).annotate(
+        average_rating=Avg('reviews__book_rating'),
+        review_count=Count('reviews')
+    ).order_by('-created_at')
+    
     genres = Genre.objects.all()
 
     search_query = request.GET.get('q')
@@ -178,7 +177,6 @@ def browse_books(request):
 @login_required
 def edit_book(request, book_id):
     book = get_object_or_404(Book, id=book_id, user=request.user)
-
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES, instance=book)
         if form.is_valid():
@@ -187,41 +185,25 @@ def edit_book(request, book_id):
             return redirect('my_listed_books')
     else:
         form = BookForm(instance=book)
-
-    context = {
-        'form': form,
-        'book': book
-    }
-    return render(request, 'home/edit_book.html', context)
-
+    return render(request, 'home/edit_book.html', {'form': form, 'book': book})
 
 @login_required
 def delete_book(request, book_id):
     book = get_object_or_404(Book, id=book_id, user=request.user)
-
     if request.method == 'POST':
-        book_title = book.title
         book.delete()
-        messages.success(request, f"'{book_title}' has been deleted successfully.")
+        messages.success(request, f"'{book.title}' has been deleted.")
         return redirect('my_listed_books')
-
     return redirect('my_listed_books')
 
-
-# --- VIEWS FOR SIMPLE CHAT SYSTEM ---
-
+# --- CHAT VIEWS ---
 @login_required
 def start_chat(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     if book.user == request.user:
-        messages.error(request, "You cannot start a chat about your own book.")
+        messages.error(request, "You cannot chat about your own book.")
         return redirect('browse_books')
-    
-    chat_room, created = ChatRoom.objects.get_or_create(
-        book=book,
-        buyer=request.user,
-        seller=book.user
-    )
+    chat_room, created = ChatRoom.objects.get_or_create(book=book, buyer=request.user, seller=book.user)
     return redirect('chat_room', room_id=chat_room.id)
 
 @login_required
@@ -230,16 +212,9 @@ def chat_room(request, room_id):
     if request.user != chat_room.buyer and request.user != chat_room.seller:
         messages.error(request, "You do not have permission to view this chat.")
         return redirect('dashboard')
-    
     messages_list = ChatMessage.objects.filter(room=chat_room).order_by('timestamp')
-    
-    ChatMessage.objects.filter(room=chat_room).exclude(sender=request.user).update(is_read=True)
-    
-    context = {
-        'room': chat_room,
-        'messages': messages_list
-    }
-    return render(request, 'home/simple_chat.html', context)
+    messages_list.exclude(sender=request.user).update(is_read=True)
+    return render(request, 'home/simple_chat.html', {'room': chat_room, 'messages': messages_list})
 
 @login_required
 def send_message(request, room_id):
@@ -247,231 +222,222 @@ def send_message(request, room_id):
     if request.method == 'POST':
         content = request.POST.get('message_content', '').strip()
         if content:
-            ChatMessage.objects.create(
-                room=chat_room,
-                sender=request.user,
-                message_content=content
-            )
+            ChatMessage.objects.create(room=chat_room, sender=request.user, message_content=content)
     return redirect('chat_room', room_id=room_id)
 
 @login_required
 def my_chats(request):
     chat_rooms = ChatRoom.objects.filter(
-        Q(buyer=request.user, buyer_deleted=False) | 
-        Q(seller=request.user, seller_deleted=False)
+        Q(buyer=request.user, buyer_deleted=False) | Q(seller=request.user, seller_deleted=False)
     ).distinct().order_by('-created_at')
-
     for room in chat_rooms:
-        room.unread_count = ChatMessage.objects.filter(
-            room=room, is_read=False
-        ).exclude(sender=request.user).count()
-
-    context = {
-        'chat_rooms': chat_rooms,
-    }
-    return render(request, 'home/my_chats.html', context)
+        room.unread_count = ChatMessage.objects.filter(room=room, is_read=False).exclude(sender=request.user).count()
+    return render(request, 'home/my_chats.html', {'chat_rooms': chat_rooms})
 
 @login_required
 def delete_chat(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
-    
     if request.user != chat_room.buyer and request.user != chat_room.seller:
         messages.error(request, "You do not have permission to modify this chat.")
         return redirect('my_chats')
-
     if request.method == 'POST':
         if request.user == chat_room.buyer:
             chat_room.buyer_deleted = True
         elif request.user == chat_room.seller:
             chat_room.seller_deleted = True
-        
         chat_room.save()
-        
         if chat_room.buyer_deleted and chat_room.seller_deleted:
             chat_room.delete()
-
-        messages.success(request, "Conversation has been removed from your view.")
+        messages.success(request, "Conversation removed.")
         return redirect('my_chats')
-
     return redirect('my_chats')
 
+# --- BOOK STATUS & EXCHANGE VIEWS ---
 @login_required
 def mark_as_exchanged(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
     book = chat_room.book
-
     if request.user != book.user:
         messages.error(request, "You do not have permission to perform this action.")
         return redirect('chat_room', room_id=room_id)
-    
     if request.method == 'POST':
         if book.status == 'Available':
             book.status = 'Exchanged'
             book.exchanged_with = chat_room.buyer
-            messages.success(request, f"'{book.title}' has been marked as Exchanged with {chat_room.buyer.username}.")
+            messages.success(request, f"'{book.title}' marked as exchanged.")
         else:
             book.status = 'Available'
             book.exchanged_with = None
-            messages.success(request, f"'{book.title}' is now available for exchange again.")
-        
+            messages.success(request, f"'{book.title}' is now available again.")
         book.save()
-
     return redirect('chat_room', room_id=room_id)
 
 @login_required
-def my_exchanged_books(request):
-    exchanged_books = Book.objects.filter(
-        user=request.user,
-        status='Exchanged'
-    ).order_by('-created_at')
+def my_exchange_history(request):
+    given_books = Book.objects.filter(user=request.user, status='Exchanged').order_by('-created_at')
+    for book in given_books:
+        book.has_been_reviewed = Review.objects.filter(
+            book=book, reviewer=request.user, review_type='seller_review'
+        ).exists()
+
+    received_books = Book.objects.filter(exchanged_with=request.user).order_by('-created_at')
+    for book in received_books:
+        book.has_been_reviewed = Review.objects.filter(
+            book=book, reviewer=request.user, review_type='buyer_review'
+        ).exists()
 
     context = {
-        'books': exchanged_books,
+        'given_books': given_books,
+        'received_books': received_books,
     }
-    return render(request, 'home/my_exchanged_books.html', context)
+    return render(request, 'home/my_exchange_history.html', context)
 
+# --- FAVORITES VIEWS ---
 @login_required
 def toggle_favorite(request, book_id):
     book = get_object_or_404(Book, id=book_id)
-    
     if request.method == 'POST':
         if book.favorited_by.filter(id=request.user.id).exists():
             book.favorited_by.remove(request.user)
-            messages.success(request, f"'{book.title}' removed from your favorites.")
         else:
             book.favorited_by.add(request.user)
-            messages.success(request, f"'{book.title}' added to your favorites.")
-            
-    next_page = request.POST.get('next', 'browse_books')
-    return redirect(next_page)
+    return redirect(request.POST.get('next', 'browse_books'))
 
 @login_required
 def my_favorite_books(request):
     favorite_books = request.user.favorite_books.all()
-    context = {
-        'books': favorite_books
-    }
-    return render(request, 'home/my_favorite_books.html', context)
+    return render(request, 'home/my_favorite_books.html', {'books': favorite_books})
 
-# --- ✅ MODIFIED THIS VIEW ---
+# --- FRIENDSHIP & PROFILE VIEWS ---
 @login_required
 def public_profile_view(request, username):
     profile_user = get_object_or_404(User, username=username)
     profile = get_object_or_404(UserProfile, user=profile_user)
-
-    # Correctly get the logged-in user's profile
     logged_in_user_profile = request.user.userprofile
     are_friends = logged_in_user_profile.friends.filter(id=profile_user.id).exists()
-    
     request_sent = FriendRequest.objects.filter(from_user=request.user, to_user=profile_user).exists()
     request_received = FriendRequest.objects.filter(from_user=profile_user, to_user=request.user).exists()
-
+    reviews = Review.objects.filter(reviewed_user=profile_user).order_by('-created_at')
+    avg_ratings = reviews.aggregate(avg_book=Avg('book_rating'), avg_exchange=Avg('exchange_rating'))
     context = {
-        'profile': profile,
-        'are_friends': are_friends,
-        'request_sent': request_sent,
-        'request_received': request_received,
+        'profile': profile, 'are_friends': are_friends, 'request_sent': request_sent,
+        'request_received': request_received, 'reviews': reviews,
+        'avg_book_rating': avg_ratings['avg_book'],
+        'avg_exchange_rating': avg_ratings['avg_exchange'],
     }
     return render(request, 'home/public_profile.html', context)
 
 @login_required
 def send_friend_request(request, username):
     to_user = get_object_or_404(User, username=username)
-    
     if request.method == 'POST':
         if to_user == request.user:
             messages.error(request, "You cannot send a friend request to yourself.")
-            return redirect('public_profile', username=username)
-            
-        if not FriendRequest.objects.filter(from_user=request.user, to_user=to_user).exists():
+        elif not FriendRequest.objects.filter(from_user=request.user, to_user=to_user).exists():
             FriendRequest.objects.create(from_user=request.user, to_user=to_user)
-            messages.success(request, f"Your friend request to {username} has been sent.")
+            messages.success(request, f"Friend request sent to {username}.")
         else:
-            messages.warning(request, "You have already sent a friend request to this user.")
-            
+            messages.warning(request, f"You have already sent a friend request to {username}.")
     return redirect('public_profile', username=username)
 
 @login_required
 def my_friend_requests(request):
     friend_requests = FriendRequest.objects.filter(to_user=request.user)
-
-    context = {
-        'friend_requests': friend_requests
-    }
-    return render(request, 'home/my_friend_requests.html', context)
+    return render(request, 'home/my_friend_requests.html', {'friend_requests': friend_requests})
 
 @login_required
 def accept_friend_request(request, request_id):
-    friend_request = get_object_or_404(FriendRequest, id=request_id)
-
-    if friend_request.to_user == request.user:
-        # Correctly add to the User's friends list, not the profile's
+    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
+    if request.method == 'POST':
         friend_request.from_user.userprofile.friends.add(request.user)
         request.user.userprofile.friends.add(friend_request.from_user)
-
         friend_request.delete()
-        
         messages.success(request, f"You are now friends with {friend_request.from_user.username}.")
-    else:
-        messages.error(request, "You cannot respond to this friend request.")
-    
     return redirect('my_friend_requests')
 
 @login_required
 def decline_friend_request(request, request_id):
-    friend_request = get_object_or_404(FriendRequest, id=request_id)
-
-    if friend_request.to_user == request.user:
+    friend_request = get_object_or_404(FriendRequest, id=request_id, to_user=request.user)
+    if request.method == 'POST':
         friend_request.delete()
-        messages.info(request, f"You have declined the friend request from {friend_request.from_user.username}.")
-    else:
-        messages.error(request, "You cannot respond to this friend request.")
-
+        messages.info(request, f"Friend request from {friend_request.from_user.username} declined.")
     return redirect('my_friend_requests')
-# home/views.py
 
-# home/views.py
-
-# home/views.py
-
-# home/views.py
-
+# --- MAP & REVIEW VIEWS ---
 @login_required
 def friend_map_view(request):
     current_user_profile = get_object_or_404(UserProfile, user=request.user)
     friends = current_user_profile.friends.all()
     friend_ids = [friend.id for friend in friends]
-
     stranger_profiles = UserProfile.objects.exclude(
         Q(user=request.user) | Q(user__id__in=friend_ids)
     ).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    
     users_data = []
-
     for friend_user in friends:
-        friend_profile = get_object_or_404(UserProfile, user=friend_user)
+        friend_profile = friend_user.userprofile
         if friend_profile.latitude and friend_profile.longitude:
             users_data.append({
-                'username': friend_profile.user.username,
-                'lat': friend_profile.latitude,
-                'lng': friend_profile.longitude,
-                'is_friend': True,
-                'location': friend_profile.location,
+                'username': friend_profile.user.username, 'lat': friend_profile.latitude,
+                'lng': friend_profile.longitude, 'is_friend': True, 'location': friend_profile.location,
             })
-    
     for other_profile in stranger_profiles:
         users_data.append({
-            'username': other_profile.user.username,
-            'lat': other_profile.latitude,
-            'lng': other_profile.longitude,
-            'is_friend': False,
-            'location': other_profile.location,
+            'username': other_profile.user.username, 'lat': other_profile.latitude,
+            'lng': other_profile.longitude, 'is_friend': False, 'location': other_profile.location,
         })
-
-   
     context = {
         'current_user_lat': current_user_profile.latitude,
         'current_user_lng': current_user_profile.longitude,
         'users_data': users_data,
     }
     return render(request, 'home/friend_map.html', context)
+
+@login_required
+def user_books_view(request, username):
+    profile_user = get_object_or_404(User, username=username)
+    books = Book.objects.filter(user=profile_user, status='Available').order_by('-created_at')
+    return render(request, 'home/user_books.html', {'profile_user': profile_user, 'books': books})
+
+@login_required
+def leave_review(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    review_type = request.GET.get('type')
+
+    if review_type == 'buyer_review' and request.user == book.exchanged_with:
+        reviewer = request.user
+        reviewed_user = book.user
+        form_class = ReviewForm
+    elif review_type == 'seller_review' and request.user == book.user:
+        reviewer = request.user
+        reviewed_user = book.exchanged_with
+        form_class = SellerReviewForm
+    else:
+        messages.error(request, "You do not have permission to leave this review.")
+        return redirect('my_exchange_history')
+
+    if Review.objects.filter(book=book, reviewer=reviewer, review_type=review_type).exists():
+        messages.warning(request, "You have already submitted this review.")
+        return redirect('my_exchange_history')
+
+    if request.method == 'POST':
+        form = form_class(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.book = book
+            review.reviewed_user = reviewed_user
+            review.reviewer = reviewer
+            review.review_type = review_type
+            if review_type == 'seller_review':
+                review.book_rating = None
+            review.save()
+            messages.success(request, "Your review has been submitted.")
+            return redirect('public_profile', username=reviewed_user.username)
+    else:
+        form = form_class()
+    
+    context = {
+        'form': form, 
+        'book': book,
+        'person_being_reviewed': reviewed_user
+    }
+    return render(request, 'home/leave_review.html', context)

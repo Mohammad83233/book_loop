@@ -26,7 +26,6 @@
             display: flex;
             align-items: center;
             gap: 2rem;
-            border-bottom: 1px solid #eee;
             padding-bottom: 2rem;
             margin-bottom: 2rem;
         }
@@ -62,6 +61,42 @@
         .btn-pending { background-color: #ffc107; color: #333; cursor: not-allowed; }
         .btn-friends { background-color: #17a2b8; }
         .btn-respond { background-color: #007bff; }
+        
+        .section-divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 2rem 0;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        .ratings-summary {
+            display: flex;
+            gap: 2rem;
+            background: #f8f9fe;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .rating-item { text-align: center; }
+        .rating-item .value { font-size: 2rem; font-weight: 700; color: #7B68EE; }
+        .rating-item .label { font-size: 0.9rem; color: #555; }
+        
+        .review-card {
+            border: 1px solid #eee;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .review-card blockquote {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+            border-left: 3px solid #7B68EE;
+            font-style: italic;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -77,7 +112,6 @@
                 <h1>{{ profile.user.username }}</h1>
                 <p>{{ profile.first_name }} {{ profile.last_name }}</p>
 
-                <!-- ✅ --- DYNAMIC FRIENDSHIP BUTTON --- ✅ -->
                 {% if profile.user != request.user %}
                     <div>
                         {% if are_friends %}
@@ -97,11 +131,54 @@
             </div>
         </div>
 
-        <!-- You can add other sections here, like the user's book list -->
-        <h3>{{ profile.user.username }}'s Available Books:</h3>
-        <p><em>(Book list will be displayed here in a future step)</em></p>
+        <h2 class="section-title">User Ratings</h2>
+        <div class="ratings-summary">
+            <div class="rating-item">
+                <div class="value">{{ avg_book_rating|floatformat:1|default:"N/A" }}</div>
+                <div class="label">Avg. Book Rating</div>
+            </div>
+            <div class="rating-item">
+                <div class="value">{{ avg_exchange_rating|floatformat:1|default:"N/A" }}</div>
+                <div class="label">Avg. Exchange Rating</div>
+            </div>
+        </div>
 
-        <p style="margin-top: 2rem;"><a href="{% url 'browse_books' %}">← Back to Browse</a></p>
+        <!-- ✅ --- UPDATED REVIEWS SECTION --- ✅ -->
+        <h2 class="section-title">Reviews Received</h2>
+        {% for review in reviews %}
+            <div class="review-card">
+                {% if review.review_type == 'buyer_review' %}
+                    <!-- Review from a BUYER about THIS user (as a seller) -->
+                    <p>
+                        <strong>Review from Buyer <a href="{% url 'public_profile' review.reviewer.username %}">{{ review.reviewer.username }}</a></strong><br>
+                        For the book: <em>"{{ review.book.title }}"</em>
+                    </p>
+                    <p>
+                        <strong>Book Rating:</strong> {{ review.book_rating }}/5 | 
+                        <strong>Exchange Rating:</strong> {{ review.exchange_rating }}/5
+                    </p>
+                {% else %}
+                    <!-- Review from a SELLER about THIS user (as a buyer) -->
+                    <p>
+                        <strong>Review from Seller <a href="{% url 'public_profile' review.reviewer.username %}">{{ review.reviewer.username }}</a></strong><br>
+                        For the book: <em>"{{ review.book.title }}"</em>
+                    </p>
+                    <p>
+                        <strong>Exchange Rating:</strong> {{ review.exchange_rating }}/5
+                    </p>
+                {% endif %}
+
+                {% if review.comment %}
+                    <blockquote>"{{ review.comment }}"</blockquote>
+                {% endif %}
+                <small>on {{ review.created_at|date:"d M, Y" }}</small>
+            </div>
+        {% empty %}
+            <p>{{ profile.user.username }} has not received any reviews yet.</p>
+        {% endfor %}
+
+        <hr class="section-divider">
+        <p><a href="{% url 'browse_books' %}">← Back to Browse</a></p>
     </div>
 </body>
 </html>

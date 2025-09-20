@@ -1,17 +1,16 @@
 from django import forms
-from .models import UserProfile, Book
+from .models import UserProfile, Book, Review
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
-            'first_name',
-            'last_name',
-            'gender',
-            'profile_pic',
-            'interested_genres',
+            'first_name', 
+            'last_name', 
+            'gender', 
+            'profile_pic', 
+            'interested_genres', 
             'looking_genres',
-            # --- ✅ ADDED THESE THREE FIELDS ---
             'location',
             'latitude',
             'longitude',
@@ -19,7 +18,6 @@ class UserProfileForm(forms.ModelForm):
         widgets = {
             'interested_genres': forms.CheckboxSelectMultiple(),
             'looking_genres': forms.CheckboxSelectMultiple(),
-            # --- ✅ ADDED WIDGETS TO HIDE LAT/LON ---
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
         }
@@ -30,4 +28,51 @@ class BookForm(forms.ModelForm):
         fields = ['title', 'author', 'genre', 'condition', 'description', 'image']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class ReviewForm(forms.ModelForm):
+    RATING_CHOICES = [
+        ('', 'Select a Rating'),
+        (5, '★★★★★ Excellent'),
+        (4, '★★★★☆ Good'),
+        (3, '★★★☆☆ Average'),
+        (2, '★★☆☆☆ Fair'),
+        (1, '★☆☆☆☆ Poor'),
+    ]
+
+    book_rating = forms.ChoiceField(choices=RATING_CHOICES, label="How was the book's condition?")
+    exchange_rating = forms.ChoiceField(choices=RATING_CHOICES, label="How was the exchange experience with the seller?")
+
+    class Meta:
+        model = Review
+        fields = ['book_rating', 'exchange_rating', 'comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Share your thoughts on the book and the exchange...'}),
+        }
+        labels = {
+            'comment': 'Additional Comments (Optional)',
+        }
+
+# --- ✅ ADDED NEW SELLER REVIEW FORM ---
+class SellerReviewForm(forms.ModelForm):
+    RATING_CHOICES = [
+        ('', 'Select a Rating'),
+        (5, '★★★★★ Excellent'),
+        (4, '★★★★☆ Good'),
+        (3, '★★★☆☆ Average'),
+        (2, '★★☆☆☆ Fair'),
+        (1, '★☆☆☆☆ Poor'),
+    ]
+
+    exchange_rating = forms.ChoiceField(choices=RATING_CHOICES, label="How was the exchange experience with the buyer?")
+
+    class Meta:
+        model = Review
+        # This form only has two fields
+        fields = ['exchange_rating', 'comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Was the other user friendly and punctual?'}),
+        }
+        labels = {
+            'comment': 'Additional Comments (Optional)',
         }

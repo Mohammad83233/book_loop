@@ -20,21 +20,20 @@ urlpatterns = [
     path('my-chats/', views.my_chats, name='my_chats'),
     path('chat/delete/<int:room_id>/', views.delete_chat, name='delete_chat'),
     path('chat/mark_exchanged/<int:room_id>/', views.mark_as_exchanged, name='mark_as_exchanged'),
-    path('my-exchanged-books/', views.my_exchanged_books, name='my_exchanged_books'),
     path('book/favorite/<int:book_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('my-favorites/', views.my_favorite_books, name='my_favorite_books'),
     path('user/<str:username>/', views.public_profile_view, name='public_profile'),
-
-    # --- ✅ ADDED URL FOR SENDING A FRIEND REQUEST ---
     path('friend-request/send/<str:username>/', views.send_friend_request, name='send_friend_request'),
-
     path('friend-requests/', views.my_friend_requests, name='my_friend_requests'),
-
     path('friend-request/accept/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
     path('friend-request/decline/<int:request_id>/', views.decline_friend_request, name='decline_friend_request'),
     path('map/', views.friend_map_view, name='friend_map'),
-    
+    path('user/<str:username>/books/', views.user_books_view, name='user_books'),
+    path('book/review/<int:book_id>/', views.leave_review, name='leave_review'),
 
+    # --- ✅ ADDED NEW UNIFIED HISTORY PAGE URL ---
+    path('my-exchange-history/', views.my_exchange_history, name='my_exchange_history'),
+    
 
     # --- PASSWORD RESET URLS ---
 
