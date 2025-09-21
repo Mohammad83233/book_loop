@@ -140,3 +140,13 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.review_type} for '{self.book.title}' by {self.reviewer.username}"
+
+# --- ✅ ADDED NEW MODEL FOR AI RECOMMENDATIONS ---
+class UserTasteProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='taste_profile')
+    preferred_genres = models.JSONField(default=list)
+    preferred_authors = models.JSONField(default=list)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Taste Profile for {self.user.username}"

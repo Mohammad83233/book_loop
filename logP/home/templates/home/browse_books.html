@@ -18,6 +18,10 @@
             flex-wrap: wrap;
             gap: 0.5rem;
         }
+        .page-header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
         .back-link {
             text-decoration: none;
             color: #7B68EE;
@@ -184,7 +188,7 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>Browse Available Books</h1>
+        <h1>{{ page_title }}</h1>
         <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
     </div>
 
@@ -288,12 +292,12 @@
             </div>
         {% empty %}
             <div style="text-align: center; padding: 3rem; background-color: #fff; border-radius: 12px;">
-                {% if search_query or selected_genre_id or selected_condition %}
+                {% if is_searching %}
                     <h3>No Books Found</h3>
-                    <p>Your search or filter criteria did not match any of your listed books.</p>
+                    <p>Your search or filter criteria did not match any of your listed books. Try clearing the filters.</p>
                 {% else %}
-                    <h3>No Books Available</h3>
-                    <p>There are currently no books listed by other users. Check back soon!</p>
+                    <h3>No Recommendations Yet</h3>
+                    <p>Start interacting with books (by favoriting or exchanging) to get personalized recommendations!</p>
                 {% endif %}
             </div>
         {% endfor %}

@@ -5,8 +5,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Avg, Count
 import requests
+from collections import Counter
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile
 from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm
 
 
@@ -142,32 +143,65 @@ def my_listed_books(request):
 
 @login_required
 def browse_books(request):
-    queryset = Book.objects.exclude(user=request.user).annotate(
-        average_rating=Avg('reviews__book_rating'),
-        review_count=Count('reviews')
-    ).order_by('-created_at')
-    
+    user = request.user
+    user_profile = get_object_or_404(UserProfile, user=user)
     genres = Genre.objects.all()
 
+    # --- 1. GATHER USER'S PREFERENCE DATA ---
+    taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
+    preferred_genres = taste_profile.preferred_genres
+    preferred_authors = taste_profile.preferred_authors
+    stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
+    stated_genre_names = [genre.name for genre in stated_genres]
+
+    # --- 2. GET AND SCORE ALL BOOKS ---
+    all_books = Book.objects.filter(status='Available').exclude(user=user).annotate(
+        average_rating=Avg('reviews__book_rating'),
+        review_count=Count('reviews')
+    )
+
+    scored_books = []
+    for book in all_books:
+        score = 0
+        # High Priority Scoring
+        if book.genre and book.genre.name in preferred_genres: score += 50
+        if book.author in preferred_authors: score += 40
+        # Low Priority Scoring
+        if book.genre and book.genre.name in stated_genre_names: score += 10
+        
+        scored_books.append({'book': book, 'score': score})
+
+    # --- 3. SORT ALL BOOKS BY AI SCORE ---
+    sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
+    
+    # This is now a sorted list of all book objects, with the best matches first
+    queryset_list = [item['book'] for item in sorted_books]
+    
+    # --- 4. APPLY USER FILTERS (IF ANY) ---
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
     selected_condition = request.GET.get('condition')
 
     if search_query:
-        queryset = queryset.filter(
-            Q(title__icontains=search_query) |
-            Q(author__icontains=search_query)
-        ).distinct()
-
+        queryset_list = [
+            book for book in queryset_list 
+            if search_query.lower() in book.title.lower() or search_query.lower() in book.author.lower()
+        ]
     if selected_genre_id:
-        queryset = queryset.filter(genre__id=selected_genre_id)
-
+        queryset_list = [
+            book for book in queryset_list 
+            if book.genre and book.genre.id == int(selected_genre_id)
+        ]
     if selected_condition:
-        queryset = queryset.filter(condition=selected_condition)
+        queryset_list = [
+            book for book in queryset_list 
+            if book.condition == selected_condition
+        ]
 
     context = {
-        'books': queryset,
+        'books': queryset_list,
         'genres': genres,
+        'page_title': "Browse & Discover Books",
         'search_query': search_query,
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
         'selected_condition': selected_condition,
@@ -195,6 +229,17 @@ def delete_book(request, book_id):
         messages.success(request, f"'{book.title}' has been deleted.")
         return redirect('my_listed_books')
     return redirect('my_listed_books')
+
+# --- HELPER FUNCTION FOR AI ---
+def update_taste_profile(user):
+    taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
+    interacted_books = Book.objects.filter(Q(favorited_by=user) | Q(exchanged_with=user)).distinct()
+    if not interacted_books.exists(): return
+    genre_counts = Counter(book.genre.name for book in interacted_books if book.genre)
+    author_counts = Counter(book.author for book in interacted_books)
+    taste_profile.preferred_genres = [genre for genre, count in genre_counts.most_common(5)]
+    taste_profile.preferred_authors = [author for author, count in author_counts.most_common(5)]
+    taste_profile.save()
 
 # --- CHAT VIEWS ---
 @login_required
@@ -265,6 +310,7 @@ def mark_as_exchanged(request, room_id):
             book.status = 'Exchanged'
             book.exchanged_with = chat_room.buyer
             messages.success(request, f"'{book.title}' marked as exchanged.")
+            update_taste_profile(chat_room.buyer)
         else:
             book.status = 'Available'
             book.exchanged_with = None
@@ -276,21 +322,11 @@ def mark_as_exchanged(request, room_id):
 def my_exchange_history(request):
     given_books = Book.objects.filter(user=request.user, status='Exchanged').order_by('-created_at')
     for book in given_books:
-        book.has_been_reviewed = Review.objects.filter(
-            book=book, reviewer=request.user, review_type='seller_review'
-        ).exists()
-
+        book.has_been_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='seller_review').exists()
     received_books = Book.objects.filter(exchanged_with=request.user).order_by('-created_at')
     for book in received_books:
-        book.has_been_reviewed = Review.objects.filter(
-            book=book, reviewer=request.user, review_type='buyer_review'
-        ).exists()
-
-    context = {
-        'given_books': given_books,
-        'received_books': received_books,
-    }
-    return render(request, 'home/my_exchange_history.html', context)
+        book.has_been_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='buyer_review').exists()
+    return render(request, 'home/my_exchange_history.html', {'given_books': given_books, 'received_books': received_books})
 
 # --- FAVORITES VIEWS ---
 @login_required
@@ -301,6 +337,7 @@ def toggle_favorite(request, book_id):
             book.favorited_by.remove(request.user)
         else:
             book.favorited_by.add(request.user)
+        update_taste_profile(request.user)
     return redirect(request.POST.get('next', 'browse_books'))
 
 @login_required
@@ -403,13 +440,17 @@ def leave_review(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     review_type = request.GET.get('type')
 
+    person_being_reviewed = None
+
     if review_type == 'buyer_review' and request.user == book.exchanged_with:
         reviewer = request.user
         reviewed_user = book.user
+        person_being_reviewed = reviewed_user
         form_class = ReviewForm
     elif review_type == 'seller_review' and request.user == book.user:
         reviewer = request.user
         reviewed_user = book.exchanged_with
+        person_being_reviewed = reviewed_user
         form_class = SellerReviewForm
     else:
         messages.error(request, "You do not have permission to leave this review.")
@@ -435,9 +476,4 @@ def leave_review(request, book_id):
     else:
         form = form_class()
     
-    context = {
-        'form': form, 
-        'book': book,
-        'person_being_reviewed': reviewed_user
-    }
-    return render(request, 'home/leave_review.html', context)
+    return render(request, 'home/leave_review.html', {'form': form, 'book': book, 'person_being_reviewed': person_being_reviewed})
