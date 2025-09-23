@@ -1,0 +1,23 @@
+<!-- templates/home/report_user.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report {{ reported_user.username }}</title>
+    <!-- Add your CSS links here for styling -->
+</head>
+<body>
+    <h1>Report User: {{ reported_user.username }}</h1>
+    <p>
+        Please provide details for your report. All reports are reviewed by our moderation team.
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit Report</button>
+    </form>
+    <br>
+    <a href="{% url 'public_profile' reported_user.username %}">Cancel and go back to profile</a>
+</body>
+</html>

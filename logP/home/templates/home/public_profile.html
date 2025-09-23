@@ -113,19 +113,28 @@
                 <p>{{ profile.first_name }} {{ profile.last_name }}</p>
 
                 {% if profile.user != request.user %}
-                    <div>
-                        {% if are_friends %}
-                            <span class="friend-button btn-friends"><i class="fas fa-check"></i> Friends</span>
-                        {% elif request_sent %}
-                            <button class="friend-button btn-pending" disabled>Request Sent</button>
-                        {% elif request_received %}
-                            <a href="{% url 'my_friend_requests' %}" class="friend-button btn-respond">Respond to Request</a>
-                        {% else %}
-                            <form method="POST" action="{% url 'send_friend_request' profile.user.username %}" style="display: inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="friend-button btn-add">Add Friend</button>
-                            </form>
-                        {% endif %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            {% if are_friends %}
+                                <span class="friend-button btn-friends"><i class="fas fa-check"></i> Friends</span>
+                            {% elif request_sent %}
+                                <button class="friend-button btn-pending" disabled>Request Sent</button>
+                            {% elif request_received %}
+                                <a href="{% url 'my_friend_requests' %}" class="friend-button btn-respond">Respond to Request</a>
+                            {% else %}
+                                <form method="POST" action="{% url 'send_friend_request' profile.user.username %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="friend-button btn-add">Add Friend</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- ✅ --- ADDED "REPORT USER" LINK --- ✅ -->
+                        <div>
+                            <a href="{% url 'report_user' profile.user.username %}" style="color: #dc3545; font-size: 0.9rem; text-decoration: none;">
+                                <i class="fas fa-flag"></i> Report User
+                            </a>
+                        </div>
                     </div>
                 {% endif %}
             </div>
@@ -143,12 +152,10 @@
             </div>
         </div>
 
-        <!-- ✅ --- UPDATED REVIEWS SECTION --- ✅ -->
         <h2 class="section-title">Reviews Received</h2>
         {% for review in reviews %}
             <div class="review-card">
                 {% if review.review_type == 'buyer_review' %}
-                    <!-- Review from a BUYER about THIS user (as a seller) -->
                     <p>
                         <strong>Review from Buyer <a href="{% url 'public_profile' review.reviewer.username %}">{{ review.reviewer.username }}</a></strong><br>
                         For the book: <em>"{{ review.book.title }}"</em>
@@ -158,7 +165,6 @@
                         <strong>Exchange Rating:</strong> {{ review.exchange_rating }}/5
                     </p>
                 {% else %}
-                    <!-- Review from a SELLER about THIS user (as a buyer) -->
                     <p>
                         <strong>Review from Seller <a href="{% url 'public_profile' review.reviewer.username %}">{{ review.reviewer.username }}</a></strong><br>
                         For the book: <em>"{{ review.book.title }}"</em>

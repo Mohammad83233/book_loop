@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
+    'jazzmin', # ✅ Add this line
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,3 +123,17 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True  # Use True for a secure connection
 EMAIL_HOST_USER = 'gamerdeath887@gmail.com'  # 👈 Enter YOUR full Gmail address here
 EMAIL_HOST_PASSWORD = 'oeyp hixo tgkl zhuy' # 👈 Paste the App Password you created (no spaces)
+# logP/settings.py
+
+JAZZMIN_SETTINGS = {
+    "site_title": "BookLoop Admin",
+    "site_header": "BookLoop",
+    "site_brand": "BookLoop",
+    "welcome_sign": "Welcome to the BookLoop Admin Panel",
+    "copyright": "BookLoop Ltd.",
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "View Site", "url": "/", "new_window": True},
+    ],
+    "show_ui_builder": True, # Allows you to customize the theme live
+}

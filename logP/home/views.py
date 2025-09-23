@@ -7,8 +7,8 @@ from django.db.models import Q, Avg, Count
 import requests
 from collections import Counter
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile
-from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile,Report
+from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm,ReportForm
 
 
 def index(request):
@@ -477,3 +477,30 @@ def leave_review(request, book_id):
         form = form_class()
     
     return render(request, 'home/leave_review.html', {'form': form, 'book': book, 'person_being_reviewed': person_being_reviewed})
+
+@login_required
+def report_user(request, username):
+    reported_user = get_object_or_404(User, username=username)
+
+    # A user cannot report themselves
+    if reported_user == request.user:
+        messages.error(request, "You cannot report yourself.")
+        return redirect('public_profile', username=username)
+
+    if request.method == 'POST':
+        form = ReportForm(request.POST)
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.reported_user = reported_user
+            report.reporting_user = request.user
+            report.save()
+            messages.success(request, f"Your report against {username} has been submitted. Our admin team will review it shortly.")
+            return redirect('public_profile', username=username)
+    else:
+        form = ReportForm()
+    
+    context = {
+        'form': form,
+        'reported_user': reported_user,
+    }
+    return render(request, 'home/report_user.html', context)

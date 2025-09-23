@@ -33,6 +33,7 @@ urlpatterns = [
 
     # --- ✅ ADDED NEW UNIFIED HISTORY PAGE URL ---
     path('my-exchange-history/', views.my_exchange_history, name='my_exchange_history'),
+    path('report-user/<str:username>/', views.report_user, name='report_user'),
     
 
     # --- PASSWORD RESET URLS ---
