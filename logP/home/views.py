@@ -7,8 +7,8 @@ from django.db.models import Q, Avg, Count
 import requests
 from collections import Counter
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile,Report
-from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm,ReportForm
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile, Report
+from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm, ReportForm
 
 
 def index(request):
@@ -19,30 +19,23 @@ def signup_view(request):
         username = request.POST['username']
         email = request.POST['email']
         password = request.POST['password']
-
         if User.objects.filter(username=username).exists():
             messages.error(request, "❌ Username already exists.")
             return redirect('signup')
-
         if User.objects.filter(email=email).exists():
             messages.error(request, "❌ Email already in use.")
             return redirect('signup')
-
         user = User.objects.create_user(username=username, email=email, password=password)
         user.save()
-
         UserProfile.objects.create(user=user)
-
         messages.success(request, "✅ Signup successful! Please log in.")
         return redirect('login')
-
     return render(request, 'home/signup.html')
 
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
-
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -50,7 +43,6 @@ def login_view(request):
         else:
             messages.error(request, "❌ Invalid username or password.")
             return redirect('login')
-
     return render(request, 'home/login.html')
 
 def logout_view(request):
@@ -64,12 +56,10 @@ def dashboard(request):
         profile = UserProfile.objects.get(user=user)
     except UserProfile.DoesNotExist:
         profile = None
-
     listed_books_count = Book.objects.filter(user=user).count()
     favourite_books_count = user.favorite_books.count()
     exchanged_books_count = Book.objects.filter(user=user, status='Exchanged').count()
     friend_request_count = FriendRequest.objects.filter(to_user=user).count()
-
     context = {
         'profile': profile,
         'listed_books_count': listed_books_count,
@@ -83,7 +73,6 @@ def dashboard(request):
 @login_required
 def profile_view(request):
     profile, created = UserProfile.objects.get_or_create(user=request.user)
-
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
@@ -92,7 +81,6 @@ def profile_view(request):
             return redirect('dashboard')
     else:
         form = UserProfileForm(instance=profile)
-
     return render(request, 'home/profile.html', {'form': form})
 
 @login_required
@@ -103,11 +91,10 @@ def list_book(request):
             book = form.save(commit=False)
             book.user = request.user
             book.save()
-            messages.success(request, f"'{book.title}' has been successfully listed!")
+            messages.success(request, f"'{book.title}' has been successfully listed and is pending approval.")
             return redirect('my_listed_books')
         else:
             messages.error(request, "The form details were invalid. Please try again.")
-    
     form = BookForm()
     return render(request, 'home/list_book.html', {'form': form})
 
@@ -115,27 +102,17 @@ def list_book(request):
 def my_listed_books(request):
     queryset = Book.objects.filter(user=request.user).order_by('-created_at')
     genres = Genre.objects.all()
-
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
     selected_condition = request.GET.get('condition')
-
     if search_query:
-        queryset = queryset.filter(
-            Q(title__icontains=search_query) |
-            Q(author__icontains=search_query)
-        ).distinct()
-
+        queryset = queryset.filter(Q(title__icontains=search_query) | Q(author__icontains=search_query)).distinct()
     if selected_genre_id:
         queryset = queryset.filter(genre__id=selected_genre_id)
-
     if selected_condition:
         queryset = queryset.filter(condition=selected_condition)
-
     context = {
-        'books': queryset,
-        'genres': genres,
-        'search_query': search_query,
+        'books': queryset, 'genres': genres, 'search_query': search_query,
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
         'selected_condition': selected_condition,
     }
@@ -146,63 +123,50 @@ def browse_books(request):
     user = request.user
     user_profile = get_object_or_404(UserProfile, user=user)
     genres = Genre.objects.all()
-
-    # --- 1. GATHER USER'S PREFERENCE DATA ---
-    taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
-    preferred_genres = taste_profile.preferred_genres
-    preferred_authors = taste_profile.preferred_authors
-    stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
-    stated_genre_names = [genre.name for genre in stated_genres]
-
-    # --- 2. GET AND SCORE ALL BOOKS ---
-    all_books = Book.objects.filter(status='Available').exclude(user=user).annotate(
-        average_rating=Avg('reviews__book_rating'),
-        review_count=Count('reviews')
-    )
-
-    scored_books = []
-    for book in all_books:
-        score = 0
-        # High Priority Scoring
-        if book.genre and book.genre.name in preferred_genres: score += 50
-        if book.author in preferred_authors: score += 40
-        # Low Priority Scoring
-        if book.genre and book.genre.name in stated_genre_names: score += 10
-        
-        scored_books.append({'book': book, 'score': score})
-
-    # --- 3. SORT ALL BOOKS BY AI SCORE ---
-    sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
-    
-    # This is now a sorted list of all book objects, with the best matches first
-    queryset_list = [item['book'] for item in sorted_books]
-    
-    # --- 4. APPLY USER FILTERS (IF ANY) ---
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
     selected_condition = request.GET.get('condition')
-
-    if search_query:
-        queryset_list = [
-            book for book in queryset_list 
-            if search_query.lower() in book.title.lower() or search_query.lower() in book.author.lower()
-        ]
-    if selected_genre_id:
-        queryset_list = [
-            book for book in queryset_list 
-            if book.genre and book.genre.id == int(selected_genre_id)
-        ]
-    if selected_condition:
-        queryset_list = [
-            book for book in queryset_list 
-            if book.condition == selected_condition
-        ]
-
+    is_searching = bool(search_query or selected_genre_id or selected_condition)
+    if is_searching:
+        page_title = "Search Results"
+        queryset = Book.objects.filter(is_approved=True).exclude(user=user).annotate(
+            average_rating=Avg('reviews__book_rating'),
+            review_count=Count('reviews')
+        ).order_by('-created_at')
+        if search_query:
+            queryset = queryset.filter(Q(title__icontains=search_query) | Q(author__icontains=search_query)).distinct()
+        if selected_genre_id:
+            queryset = queryset.filter(genre__id=selected_genre_id)
+        if selected_condition:
+            queryset = queryset.filter(condition=selected_condition)
+        books = queryset
+    else:
+        page_title = "Recommended For You"
+        taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
+        preferred_genres = taste_profile.preferred_genres
+        preferred_authors = taste_profile.preferred_authors
+        stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
+        stated_genre_names = [genre.name for genre in stated_genres]
+        books_to_score = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).annotate(
+            average_rating=Avg('reviews__book_rating'),
+            review_count=Count('reviews')
+        )
+        scored_books = []
+        for book in books_to_score:
+            score = 0
+            if book.genre and book.genre.name in preferred_genres: score += 50
+            if book.author in preferred_authors: score += 40
+            if book.genre and book.genre.name in stated_genre_names: score += 10
+            if score > 0:
+                scored_books.append({'book': book, 'score': score})
+        if not scored_books:
+            books = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).order_by('-created_at')[:10]
+        else:
+            sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
+            books = [item['book'] for item in sorted_books[:20]]
     context = {
-        'books': queryset_list,
-        'genres': genres,
-        'page_title': "Browse & Discover Books",
-        'search_query': search_query,
+        'books': books, 'genres': genres, 'page_title': page_title,
+        'is_searching': is_searching, 'search_query': search_query,
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
         'selected_condition': selected_condition,
     }
@@ -230,7 +194,6 @@ def delete_book(request, book_id):
         return redirect('my_listed_books')
     return redirect('my_listed_books')
 
-# --- HELPER FUNCTION FOR AI ---
 def update_taste_profile(user):
     taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
     interacted_books = Book.objects.filter(Q(favorited_by=user) | Q(exchanged_with=user)).distinct()
@@ -241,7 +204,6 @@ def update_taste_profile(user):
     taste_profile.preferred_authors = [author for author, count in author_counts.most_common(5)]
     taste_profile.save()
 
-# --- CHAT VIEWS ---
 @login_required
 def start_chat(request, book_id):
     book = get_object_or_404(Book, id=book_id)
@@ -297,7 +259,6 @@ def delete_chat(request, room_id):
         return redirect('my_chats')
     return redirect('my_chats')
 
-# --- BOOK STATUS & EXCHANGE VIEWS ---
 @login_required
 def mark_as_exchanged(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
@@ -328,7 +289,6 @@ def my_exchange_history(request):
         book.has_been_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='buyer_review').exists()
     return render(request, 'home/my_exchange_history.html', {'given_books': given_books, 'received_books': received_books})
 
-# --- FAVORITES VIEWS ---
 @login_required
 def toggle_favorite(request, book_id):
     book = get_object_or_404(Book, id=book_id)
@@ -345,7 +305,6 @@ def my_favorite_books(request):
     favorite_books = request.user.favorite_books.all()
     return render(request, 'home/my_favorite_books.html', {'books': favorite_books})
 
-# --- FRIENDSHIP & PROFILE VIEWS ---
 @login_required
 def public_profile_view(request, username):
     profile_user = get_object_or_404(User, username=username)
@@ -400,7 +359,6 @@ def decline_friend_request(request, request_id):
         messages.info(request, f"Friend request from {friend_request.from_user.username} declined.")
     return redirect('my_friend_requests')
 
-# --- MAP & REVIEW VIEWS ---
 @login_required
 def friend_map_view(request):
     current_user_profile = get_object_or_404(UserProfile, user=request.user)
@@ -432,16 +390,14 @@ def friend_map_view(request):
 @login_required
 def user_books_view(request, username):
     profile_user = get_object_or_404(User, username=username)
-    books = Book.objects.filter(user=profile_user, status='Available').order_by('-created_at')
+    books = Book.objects.filter(user=profile_user, status='Available', is_approved=True).order_by('-created_at')
     return render(request, 'home/user_books.html', {'profile_user': profile_user, 'books': books})
 
 @login_required
 def leave_review(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     review_type = request.GET.get('type')
-
     person_being_reviewed = None
-
     if review_type == 'buyer_review' and request.user == book.exchanged_with:
         reviewer = request.user
         reviewed_user = book.user
@@ -455,11 +411,9 @@ def leave_review(request, book_id):
     else:
         messages.error(request, "You do not have permission to leave this review.")
         return redirect('my_exchange_history')
-
     if Review.objects.filter(book=book, reviewer=reviewer, review_type=review_type).exists():
         messages.warning(request, "You have already submitted this review.")
         return redirect('my_exchange_history')
-
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
@@ -475,18 +429,14 @@ def leave_review(request, book_id):
             return redirect('public_profile', username=reviewed_user.username)
     else:
         form = form_class()
-    
     return render(request, 'home/leave_review.html', {'form': form, 'book': book, 'person_being_reviewed': person_being_reviewed})
 
 @login_required
 def report_user(request, username):
     reported_user = get_object_or_404(User, username=username)
-
-    # A user cannot report themselves
     if reported_user == request.user:
         messages.error(request, "You cannot report yourself.")
         return redirect('public_profile', username=username)
-
     if request.method == 'POST':
         form = ReportForm(request.POST)
         if form.is_valid():
@@ -494,13 +444,8 @@ def report_user(request, username):
             report.reported_user = reported_user
             report.reporting_user = request.user
             report.save()
-            messages.success(request, f"Your report against {username} has been submitted. Our admin team will review it shortly.")
+            messages.success(request, f"Your report against {username} has been submitted.")
             return redirect('public_profile', username=username)
     else:
         form = ReportForm()
-    
-    context = {
-        'form': form,
-        'reported_user': reported_user,
-    }
-    return render(request, 'home/report_user.html', context)
+    return render(request, 'home/report_user.html', {'form': form, 'reported_user': reported_user})

@@ -83,6 +83,9 @@ class Book(models.Model):
         related_name='received_books'
     )
     favorited_by = models.ManyToManyField(User, related_name='favorite_books', blank=True)
+    
+    # --- ✅ ADDED THIS FIELD ---
+    is_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -150,7 +153,6 @@ class UserTasteProfile(models.Model):
     def __str__(self):
         return f"Taste Profile for {self.user.username}"
 
-# --- ✅ ADDED NEW MODEL FOR REPORTING ---
 class Report(models.Model):
     REASON_CHOICES = [
         ('spam', 'Spam or Misleading'),
@@ -159,12 +161,8 @@ class Report(models.Model):
         ('other', 'Other'),
     ]
 
-    # The user who is being reported
     reported_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_against')
-    
-    # The user who is filing the report
     reporting_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_filed')
-    
     reason = models.CharField(max_length=20, choices=REASON_CHOICES)
     details = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
