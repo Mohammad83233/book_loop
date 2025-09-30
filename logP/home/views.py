@@ -7,7 +7,7 @@ from django.db.models import Q, Avg, Count
 import requests
 from collections import Counter
 
-from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile, Report
+from .models import UserProfile, Book, Genre, ChatRoom, ChatMessage, FriendRequest, Review, UserTasteProfile, Report,ExchangeHistory
 from .forms import UserProfileForm, BookForm, ReviewForm, SellerReviewForm, ReportForm
 
 
@@ -104,13 +104,13 @@ def my_listed_books(request):
     genres = Genre.objects.all()
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
-    selected_condition = request.GET.get('condition')
+    selected_condition = request.GET.get('condition_rating')
     if search_query:
         queryset = queryset.filter(Q(title__icontains=search_query) | Q(author__icontains=search_query)).distinct()
     if selected_genre_id:
         queryset = queryset.filter(genre__id=selected_genre_id)
     if selected_condition:
-        queryset = queryset.filter(condition=selected_condition)
+        queryset = queryset.filter(condition_rating=selected_condition)
     context = {
         'books': queryset, 'genres': genres, 'search_query': search_query,
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
@@ -123,50 +123,40 @@ def browse_books(request):
     user = request.user
     user_profile = get_object_or_404(UserProfile, user=user)
     genres = Genre.objects.all()
+    update_taste_profile(user)
+    taste_profile = get_object_or_404(UserTasteProfile, user=user)
+    preferred_genres = taste_profile.preferred_genres
+    preferred_authors = taste_profile.preferred_authors
+    stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
+    stated_genre_names = [genre.name for genre in stated_genres]
+    all_books = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).annotate(
+        average_rating=Avg('reviews__book_rating'),
+        review_count=Count('reviews')
+    )
+    scored_books = []
+    for book in all_books:
+        score = 0
+        if book.genre and book.genre.name in preferred_genres: score += 50
+        if book.author in preferred_authors: score += 40
+        if book.genre and book.genre.name in stated_genre_names: score += 10
+        scored_books.append({'book': book, 'score': score})
+    sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
+    queryset_list = [item['book'] for item in sorted_books]
     search_query = request.GET.get('q')
     selected_genre_id = request.GET.get('genre')
-    selected_condition = request.GET.get('condition')
-    is_searching = bool(search_query or selected_genre_id or selected_condition)
-    if is_searching:
-        page_title = "Search Results"
-        queryset = Book.objects.filter(is_approved=True).exclude(user=user).annotate(
-            average_rating=Avg('reviews__book_rating'),
-            review_count=Count('reviews')
-        ).order_by('-created_at')
+    selected_condition = request.GET.get('condition_rating')
+    if search_query or selected_genre_id or selected_condition:
         if search_query:
-            queryset = queryset.filter(Q(title__icontains=search_query) | Q(author__icontains=search_query)).distinct()
+            queryset_list = [book for book in queryset_list if search_query.lower() in book.title.lower() or search_query.lower() in book.author.lower()]
         if selected_genre_id:
-            queryset = queryset.filter(genre__id=selected_genre_id)
+            queryset_list = [book for book in queryset_list if book.genre and book.genre.id == int(selected_genre_id)]
         if selected_condition:
-            queryset = queryset.filter(condition=selected_condition)
-        books = queryset
-    else:
-        page_title = "Recommended For You"
-        taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
-        preferred_genres = taste_profile.preferred_genres
-        preferred_authors = taste_profile.preferred_authors
-        stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
-        stated_genre_names = [genre.name for genre in stated_genres]
-        books_to_score = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).annotate(
-            average_rating=Avg('reviews__book_rating'),
-            review_count=Count('reviews')
-        )
-        scored_books = []
-        for book in books_to_score:
-            score = 0
-            if book.genre and book.genre.name in preferred_genres: score += 50
-            if book.author in preferred_authors: score += 40
-            if book.genre and book.genre.name in stated_genre_names: score += 10
-            if score > 0:
-                scored_books.append({'book': book, 'score': score})
-        if not scored_books:
-            books = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).order_by('-created_at')[:10]
-        else:
-            sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
-            books = [item['book'] for item in sorted_books[:20]]
+            queryset_list = [book for book in queryset_list if book.condition_rating == int(selected_condition)]
     context = {
-        'books': books, 'genres': genres, 'page_title': page_title,
-        'is_searching': is_searching, 'search_query': search_query,
+        'books': queryset_list,
+        'genres': genres,
+        'page_title': "Browse & Discover Books",
+        'search_query': search_query,
         'selected_genre_id': int(selected_genre_id) if selected_genre_id else 0,
         'selected_condition': selected_condition,
     }
@@ -195,11 +185,36 @@ def delete_book(request, book_id):
     return redirect('my_listed_books')
 
 def update_taste_profile(user):
+    """
+    Analyzes all of a user's permanent interactions to build their taste profile.
+    """
     taste_profile, created = UserTasteProfile.objects.get_or_create(user=user)
-    interacted_books = Book.objects.filter(Q(favorited_by=user) | Q(exchanged_with=user)).distinct()
-    if not interacted_books.exists(): return
+    
+    # --- ✅ THIS IS THE NEW, ROBUST LOGIC ---
+    
+    # 1. Get IDs of all books the user has favorited
+    favorited_book_ids = list(user.favorite_books.all().values_list('id', flat=True))
+
+    # 2. Get IDs of all books from their permanent exchange history (both given and received)
+    given_book_ids = list(ExchangeHistory.objects.filter(seller=user).values_list('book_id', flat=True))
+    received_book_ids = list(ExchangeHistory.objects.filter(buyer=user).values_list('book_id', flat=True))
+
+    # 3. Combine all IDs into a single, unique set
+    interacted_book_ids = set(favorited_book_ids + given_book_ids + received_book_ids)
+
+    if not interacted_book_ids:
+        taste_profile.preferred_genres = []
+        taste_profile.preferred_authors = []
+        taste_profile.save()
+        return
+
+    # 4. Fetch the actual book objects in a single query
+    interacted_books = Book.objects.filter(id__in=interacted_book_ids)
+
+    # --- The rest of the logic remains the same ---
     genre_counts = Counter(book.genre.name for book in interacted_books if book.genre)
     author_counts = Counter(book.author for book in interacted_books)
+
     taste_profile.preferred_genres = [genre for genre, count in genre_counts.most_common(5)]
     taste_profile.preferred_authors = [author for author, count in author_counts.most_common(5)]
     taste_profile.save()
@@ -263,30 +278,43 @@ def delete_chat(request, room_id):
 def mark_as_exchanged(request, room_id):
     chat_room = get_object_or_404(ChatRoom, id=room_id)
     book = chat_room.book
+
     if request.user != book.user:
         messages.error(request, "You do not have permission to perform this action.")
         return redirect('chat_room', room_id=room_id)
+
     if request.method == 'POST':
         if book.status == 'Available':
             book.status = 'Exchanged'
             book.exchanged_with = chat_room.buyer
-            messages.success(request, f"'{book.title}' marked as exchanged.")
+            
+            # --- ✅ ADD THIS LINE TO CREATE THE PERMANENT RECORD ---
+            ExchangeHistory.objects.create(
+                book=book,
+                seller=book.user,
+                buyer=chat_room.buyer
+            )
+
+            messages.success(request, f"'{book.title}' has been marked as exchanged.")
             update_taste_profile(chat_room.buyer)
+            update_taste_profile(book.user)
         else:
             book.status = 'Available'
             book.exchanged_with = None
-            messages.success(request, f"'{book.title}' is now available again.")
+            messages.success(request, f"'{book.title}' is now available for exchange again.")
+        
         book.save()
+
     return redirect('chat_room', room_id=room_id)
 
 @login_required
 def my_exchange_history(request):
     given_books = Book.objects.filter(user=request.user, status='Exchanged').order_by('-created_at')
     for book in given_books:
-        book.has_been_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='seller_review').exists()
+        book.seller_has_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='seller_review').exists()
     received_books = Book.objects.filter(exchanged_with=request.user).order_by('-created_at')
     for book in received_books:
-        book.has_been_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='buyer_review').exists()
+        book.buyer_has_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='buyer_review').exists()
     return render(request, 'home/my_exchange_history.html', {'given_books': given_books, 'received_books': received_books})
 
 @login_required

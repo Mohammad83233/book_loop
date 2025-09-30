@@ -52,13 +52,6 @@ class UserProfile(models.Model):
 
 # Book model for listing books
 class Book(models.Model):
-    CONDITION_CHOICES = [
-        ('New', 'New'),
-        ('Like New', 'Like New'),
-        ('Good', 'Good'),
-        ('Fair', 'Fair'),
-    ]
-
     STATUS_CHOICES = [
         ('Available', 'Available'),
         ('Exchanged', 'Exchanged'),
@@ -69,7 +62,19 @@ class Book(models.Model):
     author = models.CharField(max_length=255)
     
     genre = models.ForeignKey(Genre, on_delete=models.SET_NULL, null=True)
-    condition = models.CharField(max_length=10, choices=CONDITION_CHOICES)
+    
+    # --- ✅ REPLACED 'condition' WITH 'condition_rating' ---
+    condition_rating = models.IntegerField(
+        choices=[
+            (5, '★★★★★ Excellent'), 
+            (4, '★★★★☆ Very Good'), 
+            (3, '★★★☆☆ Good'), 
+            (2, '★★☆☆☆ Fair'), 
+            (1, '★☆☆☆☆ Poor')
+        ],
+        default=3
+    )
+    
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='book_images/')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -83,12 +88,14 @@ class Book(models.Model):
         related_name='received_books'
     )
     favorited_by = models.ManyToManyField(User, related_name='favorite_books', blank=True)
-    
-    # --- ✅ ADDED THIS FIELD ---
     is_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
+
+    @property
+    def condition_stars(self):
+        return '★' * self.condition_rating + '☆' * (5 - self.condition_rating)
 
 # --- CHAT MODELS ---
 
@@ -169,3 +176,15 @@ class Report(models.Model):
 
     def __str__(self):
         return f"Report against {self.reported_user.username} by {self.reporting_user.username}"
+    
+    
+
+class ExchangeHistory(models.Model):
+    """ A permanent record of a completed book exchange. """
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exchanges_as_seller')
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exchanges_as_buyer')
+    exchanged_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"'{self.book.title}' exchanged from {self.seller.username} to {self.buyer.username}"

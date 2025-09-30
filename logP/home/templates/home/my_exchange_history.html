@@ -4,35 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <title>My Exchange History - BookLoop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background-color: #f4f7fc; margin: 0; }
-        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fe;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #e0e0e0;
             padding-bottom: 1rem;
             margin-bottom: 2rem;
+            border-bottom: 1px solid #e0e0e0;
         }
-        .page-header h1 { font-size: 2.5rem; font-weight: 700; color: #333; margin: 0; }
-        .back-link { text-decoration: none; color: #7B68EE; font-weight: 500; }
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        .back-link {
+            text-decoration: none;
+            color: #7B68EE;
+            font-weight: 500;
+        }
         .history-section {
-            background: white;
+            background-color: #fff;
             padding: 2rem;
             border-radius: 15px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.05);
             margin-bottom: 2rem;
         }
-        .history-section h2 { margin-top: 0; }
-        .book-item {
+        .history-section h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 1rem;
+        }
+        .history-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 1rem 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f5f5f5;
         }
-        .book-item:last-child { border-bottom: none; }
+        .history-item:last-child {
+            border-bottom: none;
+        }
         .review-btn {
             display: inline-block;
             padding: 0.6rem 1.2rem;
@@ -41,8 +69,15 @@
             text-decoration: none;
             border-radius: 8px;
             font-weight: 500;
+            white-space: nowrap;
         }
-        .reviewed-text { color: #28a745; font-weight: 500; }
+        .reviewed-text {
+            color: #28a745;
+            font-weight: 500;
+        }
+        .empty-state {
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -51,17 +86,15 @@
             <h1>My Exchange History</h1>
             <a href="{% url 'dashboard' %}" class="back-link">← Back to Dashboard</a>
         </div>
-        
-        <!-- Books I've Given Section -->
+
         <div class="history-section">
             <h2>Books I've Given</h2>
             {% for book in given_books %}
-                <div class="book-item">
+                <div class="history-item">
+                    <p><strong>{{ book.title }}</strong> exchanged with <strong>{{ book.exchanged_with.username }}</strong></p>
                     <div>
-                        <p><strong>{{ book.title }}</strong> exchanged with {{ book.exchanged_with.username }}</p>
-                    </div>
-                    <div>
-                        {% if not book.has_been_reviewed_by_seller %}
+                        <!-- ✅ --- USE THE CORRECT VARIABLE --- ✅ -->
+                        {% if not book.seller_has_reviewed %}
                             <a href="{% url 'leave_review' book.id %}?type=seller_review" class="review-btn">Review Buyer</a>
                         {% else %}
                             <span class="reviewed-text">✔ Review Submitted</span>
@@ -69,20 +102,18 @@
                     </div>
                 </div>
             {% empty %}
-                <p>You have not given any books in an exchange yet.</p>
+                <p class="empty-state">You have not given any books in an exchange yet.</p>
             {% endfor %}
         </div>
 
-        <!-- Books I've Received Section -->
         <div class="history-section">
             <h2>Books I've Received</h2>
             {% for book in received_books %}
-                <div class="book-item">
+                <div class="history-item">
+                    <p><strong>{{ book.title }}</strong> received from <strong>{{ book.user.username }}</strong></p>
                     <div>
-                        <p><strong>{{ book.title }}</strong> received from {{ book.user.username }}</p>
-                    </div>
-                    <div>
-                        {% if not book.has_been_reviewed_by_buyer %}
+                        <!-- ✅ --- USE THE CORRECT VARIABLE --- ✅ -->
+                        {% if not book.buyer_has_reviewed %}
                             <a href="{% url 'leave_review' book.id %}?type=buyer_review" class="review-btn">Review Book & Seller</a>
                         {% else %}
                             <span class="reviewed-text">✔ Review Submitted</span>
@@ -90,7 +121,7 @@
                     </div>
                 </div>
             {% empty %}
-                <p>You have not received any books in an exchange yet.</p>
+                <p class="empty-state">You have not received any books in an exchange yet.</p>
             {% endfor %}
         </div>
     </div>

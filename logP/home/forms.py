@@ -25,9 +25,13 @@ class UserProfileForm(forms.ModelForm):
 class BookForm(forms.ModelForm):
     class Meta:
         model = Book
-        fields = ['title', 'author', 'genre', 'condition', 'description', 'image']
+        fields = ['title', 'author', 'genre', 'condition_rating', 'description', 'image']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'condition_rating': forms.RadioSelect,
+        }
+        labels = {
+            'condition_rating': 'Book Condition (1=Poor, 5=Excellent)'
         }
 
 class ReviewForm(forms.ModelForm):
