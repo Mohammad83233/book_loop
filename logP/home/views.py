@@ -129,6 +129,7 @@ def browse_books(request):
     preferred_authors = taste_profile.preferred_authors
     stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
     stated_genre_names = [genre.name for genre in stated_genres]
+    received_book_ids = ExchangeHistory.objects.filter(buyer=user).values_list('book__id', flat=True)
     all_books = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).annotate(
         average_rating=Avg('reviews__book_rating'),
         review_count=Count('reviews')
@@ -139,6 +140,7 @@ def browse_books(request):
         if book.genre and book.genre.name in preferred_genres: score += 50
         if book.author in preferred_authors: score += 40
         if book.genre and book.genre.name in stated_genre_names: score += 10
+        if book.id in received_book_ids: score -= 1000 
         scored_books.append({'book': book, 'score': score})
     sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
     queryset_list = [item['book'] for item in sorted_books]
