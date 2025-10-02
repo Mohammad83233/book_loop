@@ -7,6 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fe;
@@ -61,15 +64,25 @@
         .history-item:last-child {
             border-bottom: none;
         }
+        .history-item p {
+            margin: 0;
+            flex: 1;
+        }
         .review-btn {
             display: inline-block;
             padding: 0.6rem 1.2rem;
             background-color: #007bff;
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 8px;
             font-weight: 500;
             white-space: nowrap;
+            position: relative;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .review-btn:hover {
+            background-color: #0056b3;
         }
         .reviewed-text {
             color: #28a745;
@@ -92,8 +105,7 @@
             {% for book in given_books %}
                 <div class="history-item">
                     <p><strong>{{ book.title }}</strong> exchanged with <strong>{{ book.exchanged_with.username }}</strong></p>
-                    <div>
-                        <!-- ✅ --- USE THE CORRECT VARIABLE --- ✅ -->
+                    <div style="position: relative; z-index: 10;">
                         {% if not book.seller_has_reviewed %}
                             <a href="{% url 'leave_review' book.id %}?type=seller_review" class="review-btn">Review Buyer</a>
                         {% else %}
@@ -111,8 +123,7 @@
             {% for book in received_books %}
                 <div class="history-item">
                     <p><strong>{{ book.title }}</strong> received from <strong>{{ book.user.username }}</strong></p>
-                    <div>
-                        <!-- ✅ --- USE THE CORRECT VARIABLE --- ✅ -->
+                    <div style="position: relative; z-index: 10;">
                         {% if not book.buyer_has_reviewed %}
                             <a href="{% url 'leave_review' book.id %}?type=buyer_review" class="review-btn">Review Book & Seller</a>
                         {% else %}

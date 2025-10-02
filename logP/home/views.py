@@ -130,6 +130,7 @@ def browse_books(request):
     stated_genres = list(user_profile.interested_genres.all()) + list(user_profile.looking_genres.all())
     stated_genre_names = [genre.name for genre in stated_genres]
     received_book_ids = ExchangeHistory.objects.filter(buyer=user).values_list('book__id', flat=True)
+    recent_exchanges = ExchangeHistory.objects.filter(Q(buyer=user) | Q(seller=user)).order_by('-exchanged_on')[:10]
     all_books = Book.objects.filter(status='Available', is_approved=True).exclude(user=user).annotate(
         average_rating=Avg('reviews__book_rating'),
         review_count=Count('reviews')
@@ -141,6 +142,12 @@ def browse_books(request):
         if book.author in preferred_authors: score += 40
         if book.genre and book.genre.name in stated_genre_names: score += 10
         if book.id in received_book_ids: score -= 1000 
+        for i, exchange in enumerate(recent_exchanges):
+            bonus = (10 - i) * 10
+            if book.genre and book.genre == exchange.book.genre:
+                score += bonus
+            if book.author == exchange.book.author:
+                score += bonus
         scored_books.append({'book': book, 'score': score})
     sorted_books = sorted(scored_books, key=lambda x: x['score'], reverse=True)
     queryset_list = [item['book'] for item in sorted_books]
@@ -309,15 +316,45 @@ def mark_as_exchanged(request, room_id):
 
     return redirect('chat_room', room_id=room_id)
 
+# home/views.py
+
 @login_required
 def my_exchange_history(request):
-    given_books = Book.objects.filter(user=request.user, status='Exchanged').order_by('-created_at')
+    # --- Books I've Given ---
+    given_books = Book.objects.filter(
+        user=request.user, 
+        status='Exchanged'
+    ).select_related('exchanged_with').order_by('-created_at')
+    
+    # For each book, check if seller has reviewed
     for book in given_books:
-        book.seller_has_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='seller_review').exists()
-    received_books = Book.objects.filter(exchanged_with=request.user).order_by('-created_at')
+        if book.exchanged_with:
+            book.seller_has_reviewed = Review.objects.filter(
+                book=book,
+                reviewer=request.user,
+                review_type='seller_review',
+                reviewed_user=book.exchanged_with
+            ).exists()
+        else:
+            book.seller_has_reviewed = False
+
+    # --- Books I've Received ---
+    received_books = Book.objects.filter(
+        exchanged_with=request.user
+    ).select_related('user').order_by('-created_at')
+    
     for book in received_books:
-        book.buyer_has_reviewed = Review.objects.filter(book=book, reviewer=request.user, review_type='buyer_review').exists()
-    return render(request, 'home/my_exchange_history.html', {'given_books': given_books, 'received_books': received_books})
+        book.buyer_has_reviewed = Review.objects.filter(
+            book=book,
+            reviewer=request.user,
+            review_type='buyer_review'
+        ).exists()
+
+    context = {
+        'given_books': given_books,
+        'received_books': received_books,
+    }
+    return render(request, 'home/my_exchange_history.html', context)
 
 @login_required
 def toggle_favorite(request, book_id):
@@ -422,28 +459,55 @@ def user_books_view(request, username):
     profile_user = get_object_or_404(User, username=username)
     books = Book.objects.filter(user=profile_user, status='Available', is_approved=True).order_by('-created_at')
     return render(request, 'home/user_books.html', {'profile_user': profile_user, 'books': books})
-
 @login_required
 def leave_review(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     review_type = request.GET.get('type')
+    
+    # Debug: Print to console
+    print(f"DEBUG: Current user: {request.user.username}")
+    print(f"DEBUG: Book owner: {book.user.username}")
+    print(f"DEBUG: Exchanged with: {book.exchanged_with.username if book.exchanged_with else 'None'}")
+    print(f"DEBUG: Review type: {review_type}")
+    
+    # Initialize variables
     person_being_reviewed = None
+    form_class = None
+    reviewer = request.user
+    reviewed_user = None
+
+    # Check if book has been exchanged
+    if not book.exchanged_with:
+        messages.error(request, "This book has not been exchanged yet.")
+        return redirect('my_exchange_history')
+
     if review_type == 'buyer_review' and request.user == book.exchanged_with:
-        reviewer = request.user
         reviewed_user = book.user
         person_being_reviewed = reviewed_user
         form_class = ReviewForm
+        print("DEBUG: Buyer review - ALLOWED")
+
     elif review_type == 'seller_review' and request.user == book.user:
-        reviewer = request.user
         reviewed_user = book.exchanged_with
         person_being_reviewed = reviewed_user
         form_class = SellerReviewForm
+        print("DEBUG: Seller review - ALLOWED")
     else:
-        messages.error(request, "You do not have permission to leave this review.")
+        print(f"DEBUG: PERMISSION DENIED - user is not buyer or seller")
+        messages.error(request, f"You do not have permission to leave this review...")
         return redirect('my_exchange_history')
-    if Review.objects.filter(book=book, reviewer=reviewer, review_type=review_type).exists():
-        messages.warning(request, "You have already submitted this review.")
+
+    # --- ✅ THIS IS THE CORRECTED DUPLICATE CHECK ---
+    if Review.objects.filter(
+        book=book, 
+        reviewer=reviewer, 
+        review_type=review_type,
+        reviewed_user=reviewed_user # This line fixes the bug
+    ).exists():
+        messages.warning(request, "You have already submitted a review for this specific exchange.")
         return redirect('my_exchange_history')
+    
+    # Handle the form submission
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
@@ -452,15 +516,22 @@ def leave_review(request, book_id):
             review.reviewed_user = reviewed_user
             review.reviewer = reviewer
             review.review_type = review_type
+            
             if review_type == 'seller_review':
                 review.book_rating = None
+            
             review.save()
-            messages.success(request, "Your review has been submitted.")
+            messages.success(request, "Your review has been submitted. Thank you!")
             return redirect('public_profile', username=reviewed_user.username)
     else:
         form = form_class()
-    return render(request, 'home/leave_review.html', {'form': form, 'book': book, 'person_being_reviewed': person_being_reviewed})
-
+    
+    context = {
+        'form': form, 
+        'book': book,
+        'person_being_reviewed': person_being_reviewed
+    }
+    return render(request, 'home/leave_review.html', context)
 @login_required
 def report_user(request, username):
     reported_user = get_object_or_404(User, username=username)
